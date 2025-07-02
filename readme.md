@@ -30,15 +30,17 @@ Sistema simples para registro e organização de boletos via planilhas Excel, co
 
 ## 📁 Estrutura de Pastas
 
+```
 AutomacaoBoletos/
-├─ public/ # Interface HTML
-│ └─ index.html
-├─ boletos/ # Planilhas .xlsx geradas (não sobem pro Git)
-├─ main.js # Electron launcher
-├─ server.js # Servidor Express
-├─ registrarBoleto.js # Lógica de gravação no Excel
+├─ public/                 # Interface HTML
+│  └─ index.html
+├─ boletos/                # Planilhas .xlsx geradas (não sobem pro Git)
+├─ main.js                 # Electron launcher
+├─ server.js               # Servidor Express
+├─ registrarBoleto.js      # Lógica de gravação no Excel
 ├─ package.json
 └─ README.md
+```
 
 ---
 
