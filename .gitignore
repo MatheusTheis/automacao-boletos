@@ -1,0 +1,8 @@
+# Arquivos da empresa
+boletos/*.xlsx
+
+# Pastas e arquivos gerados
+node_modules/
+dist/
+*.log
+.env
