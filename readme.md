@@ -40,10 +40,6 @@ AutomacaoBoletos/
 ├─ package.json
 └─ README.md
 
-yaml
-Copiar
-Editar
-
 ---
 
 ## 🛠️ Como rodar localmente (modo desenvolvedor)
@@ -56,21 +52,10 @@ Editar
    cd automacao-boletos
    npm install
 Para testar localmente com navegador:
-
-bash
-Copiar
-Editar
 npm start
 Para rodar como app com janela (Electron):
-
-bash
-Copiar
-Editar
 npm run dev
 🧾 Como gerar instalador (.exe)
-bash
-Copiar
-Editar
 npm run build
 A saída ficará em /dist/, com o instalador .exe.
 
