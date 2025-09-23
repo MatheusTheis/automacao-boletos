@@ -2,18 +2,18 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
-  <title>Registrar Boleto Cemavi</title>
+  <title>Registrar Boleto MB</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="top-bar">
     <button id="btn-dark" class="btn">Modo Claro</button>
-    <button onclick="window.location.href='empresa.html'" class="btn">Ir para MB</button>
+    <button onclick="window.location.href='index.html'" class="btn">Voltar</button>
   </div>
   <div class="main-content">
-    <h2>Novo Boleto Cemavi</h2>
+    <h2>Novo Boleto MB</h2>
     <form id="frm">
-      <input type="hidden" name="empresa" value="CEMAVI">
+      <input type="hidden" name="empresa" value="MB">
       <label class="label">Cliente <input name="cliente" required class="input"></label>
       <label class="label">Nosso Nº <input name="nosso" required class="input"></label>
       <label class="label">Valor <input name="valor" required class="input"></label>
@@ -30,17 +30,17 @@
   <aside class="side-panel">
     <div class="card">
       <div class="card-title">Abertos</div>
-      <div class="card-value">12</div>
-      <div class="progress"><div class="progress-bar" style="width:60%"></div></div>
+      <div class="card-value">5</div>
+      <div class="progress"><div class="progress-bar" style="width:50%"></div></div>
     </div>
     <div class="card">
       <div class="card-title">Pagos</div>
-      <div class="card-value">8</div>
-      <div class="progress"><div class="progress-bar" style="width:40%"></div></div>
+      <div class="card-value">2</div>
+      <div class="progress"><div class="progress-bar" style="width:20%"></div></div>
     </div>
     <div class="card">
       <div class="card-title">Vencendo</div>
-      <div class="card-value">3</div>
+      <div class="card-value">2</div>
       <div class="progress"><div class="progress-bar" style="width:20%"></div></div>
     </div>
     <div class="card">
@@ -84,27 +84,27 @@
     mascaraData(document.querySelector('input[name="emiss"]'));
     mascaraData(document.querySelector('input[name="venc"]'));
 
-    // Nosso Nº Cemavi: "000XXXXX-XX"
-    const nossoInputCemavi = document.querySelector('input[name="nosso"]');
-    if (nossoInputCemavi) {
-      nossoInputCemavi.placeholder = "000_____-__";
-      nossoInputCemavi.value = "000";
+    // Nosso Nº MB: "0000XXXX-XX"
+    const nossoInputMB = document.querySelector('input[name="nosso"]');
+    if (nossoInputMB) {
+      nossoInputMB.placeholder = "0000____-__";
+      nossoInputMB.value = "0000";
 
-      nossoInputCemavi.addEventListener('input', function(e) {
-        let v = nossoInputCemavi.value.replace(/^000/, '').replace(/\D/g, '');
-        v = v.slice(0,7);
-        let parte1 = v.slice(0,5);
-        let parte2 = v.slice(5,7);
-        let result = "000" + parte1;
-        if (v.length > 5) result += "-" + parte2;
-        nossoInputCemavi.value = result;
+      nossoInputMB.addEventListener('input', function(e) {
+        let v = nossoInputMB.value.replace(/^0000/, '').replace(/\D/g, '');
+        v = v.slice(0,6);
+        let parte1 = v.slice(0,4);
+        let parte2 = v.slice(4,6);
+        let result = "0000" + parte1;
+        if (v.length > 4) result += "-" + parte2;
+        nossoInputMB.value = result;
       });
 
-      nossoInputCemavi.addEventListener('keydown', function(e) {
-        const prefix = "000";
+      nossoInputMB.addEventListener('keydown', function(e) {
+        const prefix = "0000";
         // Impede apagar o prefixo
         if (
-          nossoInputCemavi.selectionStart <= prefix.length &&
+          nossoInputMB.selectionStart <= prefix.length &&
           (e.key === "Backspace" || e.key === "Delete")
         ) {
           e.preventDefault();
@@ -115,9 +115,9 @@
         }
       });
 
-      nossoInputCemavi.addEventListener('blur', function() {
-        if (!nossoInputCemavi.value.startsWith("000")) {
-          nossoInputCemavi.value = "000";
+      nossoInputMB.addEventListener('blur', function() {
+        if (!nossoInputMB.value.startsWith("0000")) {
+          nossoInputMB.value = "0000";
         }
       });
     }

@@ -15,8 +15,9 @@ export const MESES_PT     = [
 export async function registrarBoleto(data) {
   // ••• validações simples •••
   if (!EMPRESAS.includes(data.empresa)) throw new Error('Empresa inválida');
-  const vencDate = dayjs(data.venc , 'DD/MM/YYYY', true);
-  const emiDate  = dayjs(data.emiss, 'DD/MM/YYYY', true);
+  // Aceita datas com ou sem zero à esquerda
+  const vencDate = dayjs(data.venc , ['D/M/YYYY', 'DD/MM/YYYY'], true);
+  const emiDate  = dayjs(data.emiss, ['D/M/YYYY', 'DD/MM/YYYY'], true);
   if (!vencDate.isValid() || !emiDate.isValid()) throw new Error('Datas no formato DD/MM/AAAA');
 
   const ano    = vencDate.year();
