@@ -6,6 +6,11 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
+// Redireciona a raiz para cemavi.html
+app.get('/', (req, res) => {
+  res.redirect('/cemavi.html');
+});
+
 app.post('/api/boletos', async (req, res) => {
   try {
     const info = await registrarBoleto(req.body);

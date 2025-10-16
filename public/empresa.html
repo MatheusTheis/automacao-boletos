@@ -19,10 +19,6 @@
       <label class="label">Valor <input name="valor" required class="input"></label>
       <label class="label">Emissão <input name="emiss" required class="input"></label>
       <label class="label">Vencimento <input name="venc" required class="input"></label>
-      <div class="checkbox-group">
-        <input type="checkbox" name="pago" class="input-checkbox" id="pago">
-        <label for="pago" class="checkbox-label">Já está pago</label>
-      </div>
       <button type="submit" class="btn primary">Registrar</button>
     </form>
     <p id="msg"></p>
@@ -122,12 +118,46 @@
       });
     }
 
+    // Navegação por Enter entre campos
+    const campoCliente = document.querySelector('input[name="cliente"]');
+    const campoNosso = document.querySelector('input[name="nosso"]');
+    const campoValor = document.querySelector('input[name="valor"]');
+    const campoEmiss = document.querySelector('input[name="emiss"]');
+    const campoVenc = document.querySelector('input[name="venc"]');
+
+    campoCliente.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        campoNosso.focus();
+      }
+    });
+
+    campoNosso.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        campoValor.focus();
+      }
+    });
+
+    campoValor.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        campoEmiss.focus();
+      }
+    });
+
+    campoEmiss.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        campoVenc.focus();
+      }
+    });
+
     // Submissão do formulário
     document.getElementById('frm').addEventListener('submit', async ev=>{
       ev.preventDefault();
       const fd  = new FormData(ev.target);
       const obj = Object.fromEntries(fd.entries());
-      obj.pago  = fd.has('pago');
       const rsp = await fetch('/api/boletos',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -139,6 +169,12 @@
         out.textContent = `✔ Gravado em ${j.arquivo} > ${j.aba}`;
         out.style.color = 'green';
         ev.target.reset();
+        // Restaurar o valor padrão do campo Nosso Nº
+        if (nossoInputMB) {
+          nossoInputMB.value = "0000";
+        }
+        // Focar no campo cliente para o próximo boleto
+        campoCliente.focus();
       }else{
         const j = await rsp.json();
         out.textContent = 'Erro: '+j.erro;

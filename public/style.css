@@ -306,3 +306,29 @@ form {
   max-width: 380px;
   text-align: left;
 }
+
+/* Estilos para autocomplete/datalist */
+input[list]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+  cursor: pointer;
+}
+
+.light input[list]::-webkit-calendar-picker-indicator {
+  filter: invert(0.3);
+}
+
+/* Garantir que o texto digitado fique visível */
+input[name="cliente"] {
+  color: var(--color-text) !important;
+  -webkit-text-fill-color: var(--color-text) !important;
+}
+
+input[name="cliente"]:-webkit-autofill,
+input[name="cliente"]:-webkit-autofill:hover,
+input[name="cliente"]:-webkit-autofill:focus,
+input[name="cliente"]:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--color-input-bg) inset !important;
+  -webkit-text-fill-color: var(--color-text) !important;
+  box-shadow: 0 0 0 30px var(--color-input-bg) inset !important;
+  color: var(--color-text) !important;
+}

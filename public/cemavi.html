@@ -8,13 +8,14 @@
 <body>
   <div class="top-bar">
     <button id="btn-dark" class="btn">Modo Claro</button>
-    <button onclick="window.location.href='empresa.html'" class="btn">Ir para MB</button>
+    <button onclick="window.location.href='mb.html'" class="btn">Ir para MB</button>
   </div>
   <div class="main-content">
     <h2>Novo Boleto Cemavi</h2>
     <form id="frm">
       <input type="hidden" name="empresa" value="CEMAVI">
-      <label class="label">Cliente <input name="cliente" required class="input"></label>
+      <label class="label">Cliente <input name="cliente" required class="input" list="clientes-cemavi" autocomplete="off"></label>
+      <datalist id="clientes-cemavi"></datalist>
       <label class="label">Nosso Nº <input name="nosso" required class="input"></label>
       <label class="label">Valor <input name="valor" required class="input"></label>
       <label class="label">Emissão <input name="emiss" required class="input"></label>
@@ -125,13 +126,6 @@
     const campoEmiss = document.querySelector('input[name="emiss"]');
     const campoVenc = document.querySelector('input[name="venc"]');
 
-    campoCliente.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        campoNosso.focus();
-      }
-    });
-
     campoNosso.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -153,6 +147,77 @@
       }
     });
 
+    // Carregar histórico de clientes do localStorage
+    function carregarHistoricoClientes() {
+      const historico = JSON.parse(localStorage.getItem('clientes-cemavi') || '[]');
+      const datalist = document.getElementById('clientes-cemavi');
+      datalist.innerHTML = '';
+      historico.forEach(cliente => {
+        const option = document.createElement('option');
+        option.value = cliente;
+        datalist.appendChild(option);
+      });
+    }
+
+    // Obter o último cliente registrado
+    function obterUltimoCliente() {
+      const historico = JSON.parse(localStorage.getItem('clientes-cemavi') || '[]');
+      return historico[0] || '';
+    }
+
+    // Salvar cliente no histórico
+    function salvarClienteNoHistorico(nomeCliente) {
+      let historico = JSON.parse(localStorage.getItem('clientes-cemavi') || '[]');
+      // Remove duplicatas e adiciona o novo no início
+      historico = historico.filter(c => c !== nomeCliente);
+      historico.unshift(nomeCliente);
+      // Mantém apenas os últimos 3 clientes
+      historico = historico.slice(0, 3);
+      localStorage.setItem('clientes-cemavi', JSON.stringify(historico));
+      carregarHistoricoClientes();
+    }
+
+    // Carregar histórico ao iniciar
+    carregarHistoricoClientes();
+
+    // Atalho Ctrl + Space para autocompletar com o último cliente
+    campoCliente.addEventListener('keydown', function(e) {
+      // Ctrl + Space
+      if (e.ctrlKey && (e.code === 'Space' || e.keyCode === 32)) {
+        e.preventDefault();
+        e.stopPropagation();
+        const ultimoCliente = obterUltimoCliente();
+        console.log('Ctrl+Space pressionado. Último cliente:', ultimoCliente);
+        if (ultimoCliente) {
+          this.value = ultimoCliente;
+          console.log('Campo preenchido com:', ultimoCliente);
+        } else {
+          console.log('Nenhum cliente no histórico');
+        }
+        return false;
+      }
+      // Enter para ir ao próximo campo
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        campoNosso.focus();
+      }
+    });
+
+    // Mostrar sugestões quando digitar qualquer letra
+    campoCliente.addEventListener('input', function() {
+      if (this.value.length > 0) {
+        // Força mostrar todas as sugestões quando há qualquer texto
+        const historico = JSON.parse(localStorage.getItem('clientes-cemavi') || '[]');
+        const datalist = document.getElementById('clientes-cemavi');
+        datalist.innerHTML = '';
+        historico.forEach(cliente => {
+          const option = document.createElement('option');
+          option.value = cliente;
+          datalist.appendChild(option);
+        });
+      }
+    });
+
     // Submissão do formulário
     document.getElementById('frm').addEventListener('submit', async ev=>{
       ev.preventDefault();
@@ -168,6 +233,10 @@
         const j = await rsp.json();
         out.textContent = `✔ Gravado em ${j.arquivo} > ${j.aba}`;
         out.style.color = 'green';
+        // Salvar cliente no histórico
+        salvarClienteNoHistorico(obj.cliente);
+        console.log('Cliente salvo no histórico:', obj.cliente);
+        console.log('Histórico atual:', JSON.parse(localStorage.getItem('clientes-cemavi') || '[]'));
         ev.target.reset();
         // Restaurar o valor padrão do campo Nosso Nº
         if (nossoInputCemavi) {

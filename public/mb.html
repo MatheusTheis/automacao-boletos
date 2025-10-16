@@ -2,19 +2,20 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
-  <title>Registrar Boleto Cemavi</title>
+  <title>Registrar Boleto MB</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="top-bar">
     <button id="btn-dark" class="btn">Modo Claro</button>
-    <button onclick="window.location.href='empresa.html'" class="btn">Ir para MB</button>
+    <button onclick="window.location.href='cemavi.html'" class="btn">Ir para Cemavi</button>
   </div>
   <div class="main-content">
-    <h2>Novo Boleto Cemavi</h2>
+    <h2>Novo Boleto MB</h2>
     <form id="frm">
-      <input type="hidden" name="empresa" value="CEMAVI">
-      <label class="label">Cliente <input name="cliente" required class="input"></label>
+      <input type="hidden" name="empresa" value="MB">
+      <label class="label">Cliente <input name="cliente" required class="input" list="clientes-mb" autocomplete="off"></label>
+      <datalist id="clientes-mb"></datalist>
       <label class="label">Nosso Nº <input name="nosso" required class="input"></label>
       <label class="label">Valor <input name="valor" required class="input"></label>
       <label class="label">Emissão <input name="emiss" required class="input"></label>
@@ -26,17 +27,17 @@
   <aside class="side-panel">
     <div class="card">
       <div class="card-title">Abertos</div>
-      <div class="card-value">12</div>
-      <div class="progress"><div class="progress-bar" style="width:60%"></div></div>
+      <div class="card-value">5</div>
+      <div class="progress"><div class="progress-bar" style="width:50%"></div></div>
     </div>
     <div class="card">
       <div class="card-title">Pagos</div>
-      <div class="card-value">8</div>
-      <div class="progress"><div class="progress-bar" style="width:40%"></div></div>
+      <div class="card-value">2</div>
+      <div class="progress"><div class="progress-bar" style="width:20%"></div></div>
     </div>
     <div class="card">
       <div class="card-title">Vencendo</div>
-      <div class="card-value">3</div>
+      <div class="card-value">2</div>
       <div class="progress"><div class="progress-bar" style="width:20%"></div></div>
     </div>
     <div class="card">
@@ -80,27 +81,27 @@
     mascaraData(document.querySelector('input[name="emiss"]'));
     mascaraData(document.querySelector('input[name="venc"]'));
 
-    // Nosso Nº Cemavi: "000XXXXX-XX"
-    const nossoInputCemavi = document.querySelector('input[name="nosso"]');
-    if (nossoInputCemavi) {
-      nossoInputCemavi.placeholder = "000_____-__";
-      nossoInputCemavi.value = "000";
+    // Nosso Nº MB: "0000XXXX-XX"
+    const nossoInputMB = document.querySelector('input[name="nosso"]');
+    if (nossoInputMB) {
+      nossoInputMB.placeholder = "0000____-__";
+      nossoInputMB.value = "0000";
 
-      nossoInputCemavi.addEventListener('input', function(e) {
-        let v = nossoInputCemavi.value.replace(/^000/, '').replace(/\D/g, '');
-        v = v.slice(0,7);
-        let parte1 = v.slice(0,5);
-        let parte2 = v.slice(5,7);
-        let result = "000" + parte1;
-        if (v.length > 5) result += "-" + parte2;
-        nossoInputCemavi.value = result;
+      nossoInputMB.addEventListener('input', function(e) {
+        let v = nossoInputMB.value.replace(/^0000/, '').replace(/\D/g, '');
+        v = v.slice(0,6);
+        let parte1 = v.slice(0,4);
+        let parte2 = v.slice(4,6);
+        let result = "0000" + parte1;
+        if (v.length > 4) result += "-" + parte2;
+        nossoInputMB.value = result;
       });
 
-      nossoInputCemavi.addEventListener('keydown', function(e) {
-        const prefix = "000";
+      nossoInputMB.addEventListener('keydown', function(e) {
+        const prefix = "0000";
         // Impede apagar o prefixo
         if (
-          nossoInputCemavi.selectionStart <= prefix.length &&
+          nossoInputMB.selectionStart <= prefix.length &&
           (e.key === "Backspace" || e.key === "Delete")
         ) {
           e.preventDefault();
@@ -111,9 +112,9 @@
         }
       });
 
-      nossoInputCemavi.addEventListener('blur', function() {
-        if (!nossoInputCemavi.value.startsWith("000")) {
-          nossoInputCemavi.value = "000";
+      nossoInputMB.addEventListener('blur', function() {
+        if (!nossoInputMB.value.startsWith("0000")) {
+          nossoInputMB.value = "0000";
         }
       });
     }
@@ -124,13 +125,6 @@
     const campoValor = document.querySelector('input[name="valor"]');
     const campoEmiss = document.querySelector('input[name="emiss"]');
     const campoVenc = document.querySelector('input[name="venc"]');
-
-    campoCliente.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        campoNosso.focus();
-      }
-    });
 
     campoNosso.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -153,6 +147,77 @@
       }
     });
 
+    // Carregar histórico de clientes do localStorage
+    function carregarHistoricoClientes() {
+      const historico = JSON.parse(localStorage.getItem('clientes-mb') || '[]');
+      const datalist = document.getElementById('clientes-mb');
+      datalist.innerHTML = '';
+      historico.forEach(cliente => {
+        const option = document.createElement('option');
+        option.value = cliente;
+        datalist.appendChild(option);
+      });
+    }
+
+    // Obter o último cliente registrado
+    function obterUltimoCliente() {
+      const historico = JSON.parse(localStorage.getItem('clientes-mb') || '[]');
+      return historico[0] || '';
+    }
+
+    // Salvar cliente no histórico
+    function salvarClienteNoHistorico(nomeCliente) {
+      let historico = JSON.parse(localStorage.getItem('clientes-mb') || '[]');
+      // Remove duplicatas e adiciona o novo no início
+      historico = historico.filter(c => c !== nomeCliente);
+      historico.unshift(nomeCliente);
+      // Mantém apenas os últimos 3 clientes
+      historico = historico.slice(0, 3);
+      localStorage.setItem('clientes-mb', JSON.stringify(historico));
+      carregarHistoricoClientes();
+    }
+
+    // Carregar histórico ao iniciar
+    carregarHistoricoClientes();
+
+    // Atalho Ctrl + Space para autocompletar com o último cliente
+    campoCliente.addEventListener('keydown', function(e) {
+      // Ctrl + Space
+      if (e.ctrlKey && (e.code === 'Space' || e.keyCode === 32)) {
+        e.preventDefault();
+        e.stopPropagation();
+        const ultimoCliente = obterUltimoCliente();
+        console.log('Ctrl+Space pressionado. Último cliente:', ultimoCliente);
+        if (ultimoCliente) {
+          this.value = ultimoCliente;
+          console.log('Campo preenchido com:', ultimoCliente);
+        } else {
+          console.log('Nenhum cliente no histórico');
+        }
+        return false;
+      }
+      // Enter para ir ao próximo campo
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        campoNosso.focus();
+      }
+    });
+
+    // Mostrar sugestões quando digitar qualquer letra
+    campoCliente.addEventListener('input', function() {
+      if (this.value.length > 0) {
+        // Força mostrar todas as sugestões quando há qualquer texto
+        const historico = JSON.parse(localStorage.getItem('clientes-mb') || '[]');
+        const datalist = document.getElementById('clientes-mb');
+        datalist.innerHTML = '';
+        historico.forEach(cliente => {
+          const option = document.createElement('option');
+          option.value = cliente;
+          datalist.appendChild(option);
+        });
+      }
+    });
+
     // Submissão do formulário
     document.getElementById('frm').addEventListener('submit', async ev=>{
       ev.preventDefault();
@@ -168,10 +233,14 @@
         const j = await rsp.json();
         out.textContent = `✔ Gravado em ${j.arquivo} > ${j.aba}`;
         out.style.color = 'green';
+        // Salvar cliente no histórico
+        salvarClienteNoHistorico(obj.cliente);
+        console.log('Cliente salvo no histórico:', obj.cliente);
+        console.log('Histórico atual:', JSON.parse(localStorage.getItem('clientes-mb') || '[]'));
         ev.target.reset();
         // Restaurar o valor padrão do campo Nosso Nº
-        if (nossoInputCemavi) {
-          nossoInputCemavi.value = "000";
+        if (nossoInputMB) {
+          nossoInputMB.value = "0000";
         }
         // Focar no campo cliente para o próximo boleto
         campoCliente.focus();

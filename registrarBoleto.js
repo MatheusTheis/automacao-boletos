@@ -11,10 +11,43 @@ export const MESES_PT     = [
   'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'
 ];
 
+// Cache dos últimos 5 registros por empresa para evitar duplicação
+const ultimosRegistros = {
+  'CEMAVI': [],
+  'MB': []
+};
+
+// Adicionar registro ao cache
+function adicionarAoCache(empresa, nossoNumero) {
+  if (!ultimosRegistros[empresa]) {
+    ultimosRegistros[empresa] = [];
+  }
+  // Remove duplicatas se existir
+  ultimosRegistros[empresa] = ultimosRegistros[empresa].filter(n => n !== nossoNumero);
+  // Adiciona no início
+  ultimosRegistros[empresa].unshift(nossoNumero);
+  // Mantém apenas os últimos 5
+  ultimosRegistros[empresa] = ultimosRegistros[empresa].slice(0, 5);
+}
+
+// Verificar se o nosso número já foi registrado recentemente
+function verificarDuplicacao(empresa, nossoNumero) {
+  if (!ultimosRegistros[empresa]) {
+    return false;
+  }
+  return ultimosRegistros[empresa].includes(nossoNumero);
+}
+
 // ---------- função principal ----------
 export async function registrarBoleto(data) {
   // ••• validações simples •••
   if (!EMPRESAS.includes(data.empresa)) throw new Error('Empresa inválida');
+  
+  // Verifica duplicação do Nosso Número
+  if (verificarDuplicacao(data.empresa, data.nosso)) {
+    throw new Error(`Nosso Nº ${data.nosso} já foi registrado recentemente. Verifique se não é duplicado.`);
+  }
+  
   // Aceita datas com ou sem zero à esquerda
   const vencDate = dayjs(data.venc , ['D/M/YYYY', 'DD/MM/YYYY'], true);
   const emiDate  = dayjs(data.emiss, ['D/M/YYYY', 'DD/MM/YYYY'], true);
@@ -52,6 +85,10 @@ export async function registrarBoleto(data) {
   aplicarFormatos(ws);
 
   await wb.xlsx.writeFile(plan);
+  
+  // Adiciona ao cache após salvar com sucesso
+  adicionarAoCache(data.empresa, data.nosso);
+  
   return { arquivo: path.basename(plan), aba: abaNome };
 }
 
