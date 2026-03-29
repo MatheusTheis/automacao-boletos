@@ -1,111 +1,106 @@
-# 💼 Automação de Boletos
+# Gestao de Boletos
 
-Sistema simples para registro e organização de boletos via planilhas Excel, com interface amigável em formato de formulário.
+Aplicacao desktop em Electron para controle de boletos. O sistema permite consultar registros, cadastrar novos boletos, marcar pagamentos e gerar relatorio em PDF de boletos atrasados.
 
----
+## Principais recursos
 
-## 🚀 Funcionalidades
+- painel de resumo com indicadores por status
+- opcao para ocultar e exibir os valores dos cards do topo
+- cadastro manual de boletos
+- marcacao de boletos pagos
+- exportacao de PDF com boletos atrasados
+- empacotamento em Electron com backend Node iniciado automaticamente
 
-- Registro de boletos por empresa e ano (ex: CEMAVI_2025.xlsx, MB_2025.xlsx)
-- Interface web simples para preenchimento
-- Organização automática por aba mensal (JANEIRO a DEZEMBRO)
-- Inserção **ordenada por vencimento**
-- Geração de `.xlsx` com:
-  - Formatação padronizada (Comic Sans MS, bordas, datas, moeda)
-  - Abas separadas por mês
-- Aplicação empacotada como aplicativo desktop (Electron)
-- **Modo Escuro/Claro**: Alternância de temas com preferência salva no navegador
-- **Navegação por teclado**: Use `Enter` para navegar entre os campos sem precisar do mouse
-- **Foco automático**: Após registrar um boleto, o foco volta automaticamente para o campo Cliente
-- **Histórico de clientes**: Sistema de autocompletar com os últimos 3 clientes cadastrados (aparece ao digitar qualquer letra)
-- **Atalho rápido**: Pressione `Ctrl + Space` no campo Cliente para preencher com o último nome registrado
-- **Máscara automática**: Formatação automática para datas (DD/MM/AAAA) e campo "Nosso Número"
-- **Proteção contra duplicação**: O sistema verifica os últimos 5 registros e impede a duplicação do "Nosso Nº"
+## Tecnologias utilizadas
 
----
-
-## 🖥️ Tecnologias Utilizadas
-
-- Node.js
-- Express
-- ExcelJS
 - Electron
-- HTML/CSS (formulário)
-- Day.js
+- React + TypeScript + Vite
+- Node.js + Express
+- Tailwind CSS
+- XLSX para leitura e escrita das planilhas
+- PDFKit para geracao de PDF
 
----
+## Estrutura do projeto
 
-## 📁 Estrutura de Pastas
-
+```text
+automacao-boletos/
+|-- boletos/              # planilhas locais usadas no desenvolvimento e no empacotamento
+|-- build/                # arquivos de apoio do empacotamento
+|-- client/               # frontend React
+|   |-- src/
+|   |   |-- componentes/
+|   |   |-- ganchos/
+|   |   |-- paginas/
+|   |   |-- servicos/
+|   |   |-- tipos/
+|   |   `-- utilitarios/
+|-- electron/             # processo principal do Electron
+|-- server/               # backend Node
+|   |-- src/
+|   |   |-- servicos/
+|   |   `-- tipos/
+|-- package.json          # scripts da aplicacao desktop
+`-- README.md
 ```
-AutomacaoBoletos/
-├─ public/                 # Interface HTML
-│  ├─ cemavi.html          # Tela de registro Cemavi
-│  ├─ mb.html              # Tela de registro MB
-│  └─ style.css            # Estilos com tema escuro/claro
-├─ boletos/                # Planilhas .xlsx geradas (não sobem pro Git)
-├─ main.js                 # Electron launcher
-├─ server.js               # Servidor Express
-├─ registrarBoleto.js      # Lógica de gravação no Excel
-├─ package.json
-└─ README.md
+
+## Como rodar em desenvolvimento
+
+Na raiz do projeto:
+
+```bash
+npm install
+npm run dev
 ```
 
----
+Scripts mais usados:
 
-## 🛠️ Como rodar localmente (modo desenvolvedor)
+- `npm run server:dev`: sobe apenas o backend
+- `npm run client:dev`: sobe apenas o frontend
+- `npm run electron:dev`: abre o Electron em modo desenvolvimento
 
-1. Instale Node.js **v20.x** (recomendo usar [NVM](https://github.com/coreybutler/nvm-windows))
-2. Clone o projeto:
-
-   ```bash
-   git clone https://github.com/MatheusTheis/automacao-boletos.git
-   cd automacao-boletos
-   npm install
-   ```
-
-3. Para testar localmente com navegador:
-   ```bash
-   npm start
-   ```
-   Acesse: `http://localhost:3000`
-
-4. Para rodar como app com janela (Electron):
-   ```bash
-   npm run dev
-   ```
-
----
-
-## ⌨️ Atalhos e Recursos de Teclado
-
-- **Enter**: Navega para o próximo campo do formulário
-- **Ctrl + Space**: No campo Cliente, preenche automaticamente com o último nome registrado
-- **Tab**: Navegação padrão entre campos
-- **Modo Claro/Escuro**: Clique no botão superior ou use a preferência salva automaticamente
-
----
-
-## 🧾 Como gerar instalador (.exe)
+## Build para entrega
 
 ```bash
 npm run build
+npm run electron:build:win
 ```
 
-A saída ficará em `/dist/`, com o instalador .exe.
+Para testar rapidamente sem instalar:
 
----
+```bash
+npm run electron:pack
+```
 
-## ⚠️ Importante
+## Variaveis de ambiente
 
-- Os arquivos `.xlsx` gerados são salvos na pasta `boletos/` e não são enviados ao GitHub
-- Cada planilha é nomeada como `CEMAVI_2025.xlsx`, `MB_2025.xlsx`, etc., organizadas por empresa + ano
-- O histórico de clientes é salvo no `localStorage` do navegador (separado por empresa)
-- As preferências de tema (claro/escuro) são mantidas entre sessões
-- **Proteção contra duplicação**: O sistema mantém em memória os últimos 5 "Nosso Nº" registrados por empresa para evitar duplicação acidental (cache temporário, válido enquanto o servidor estiver rodando)
+O projeto funciona sem arquivo `.env`, mas aceita as seguintes variaveis quando necessario:
 
----
+- `HOST`: host do backend
+- `PORT`: porta do backend
+- `BOLETOS_DIR`: diretorio das planilhas
+- `ELECTRON_START_URL`: usada apenas no desenvolvimento do Electron
 
-## 👤 Autor
+## Fluxo do Electron
 
-Matheus Theis
+- em desenvolvimento, o Electron usa o frontend do Vite e sobe o backend local
+- em producao, o Electron carrega o frontend compilado e inicia o backend empacotado
+- as planilhas sao copiadas para uma pasta gravavel do usuario quando o app instalado abre pela primeira vez
+
+## GitHub
+
+- a pasta `boletos` contem dados locais e nao deve ser enviada com os arquivos `.xlsx`
+- o `.gitignore` ja bloqueia as planilhas em `boletos/*.xlsx`
+- nao envie `node_modules`, `dist`, `server/dist`, `client/dist` ou `dist-electron`
+
+## Organizacao aplicada
+
+- separacao mais clara entre frontend, backend e processo principal do Electron
+- nomes de arquivos e pastas padronizados em portugues
+- remocao de codigo legado ligado a fluxos antigos
+- centralizacao de tipos, servicos e utilitarios
+- limpeza de arquivos obsoletos e estrutura residual
+
+## Observacoes
+
+- para enviar o sistema ao cliente, use o instalador gerado em `dist-electron`
+- se quiser icone personalizado no instalador, adicione `build/icon.ico` ou ajuste `build/icon.png`

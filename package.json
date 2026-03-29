@@ -1,31 +1,106 @@
 {
-  "name": "boletoapp",
-  "version": "1.0.0",
-  "main": "main.js",
-  "type": "module",
-  "author": "Matheus",
-  "description": "Sistema de registro de boletos",
+  "name": "gestao-boletos",
+  "version": "1.0.1",
+  "description": "Sistema de gestao de boletos CEMAVI e MB",
+  "author": "Matheus Theis",
+  "main": "electron/main.js",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.18",
+    "debug": "^2.6.9",
+    "depd": "^2.0.0",
+    "destroy": "^1.2.0",
+    "escape-html": "^1.0.3",
+    "etag": "^1.8.1",
+    "express": "^4.21.2",
+    "fresh": "^0.5.2",
+    "http-errors": "^2.0.0",
+    "mime": "^1.6.0",
+    "on-finished": "^2.4.1",
+    "pdfkit": "^0.17.2",
+    "range-parser": "^1.2.1",
+    "statuses": "^2.0.1",
+    "unicode-trie": "^2.0.0",
+    "xlsx": "^0.18.5"
+  },
   "scripts": {
-    "start": "node server.js"
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "npm run dev --workspace=server",
+    "client:dev": "npm run dev --workspace=client",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "npm run build --workspace=server",
+    "build:client": "npm run build --workspace=client",
+    "electron:dev": "concurrently \"npm run dev --workspace=client -- --port 5173 --strictPort\" \"wait-on tcp:5173 && cross-env ELECTRON_START_URL=http://localhost:5173 electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:win": "npm run build && electron-builder --win --config.win.signAndEditExecutable=false",
+    "electron:pack": "npm run build && electron-builder --dir --config.win.signAndEditExecutable=false"
   },
   "build": {
-    "appId": "com.matheus.boletoapp",
-    "productName": "BoletosApp",
-    "files": [
-      "**/*",
-      "!node_modules/.cache",
-      "!dist"
+    "appId": "com.matheustheis.gestao-boletos",
+    "productName": "Gestao de Boletos",
+    "asar": true,
+    "asarUnpack": [
+      "server/dist/**/*"
     ],
     "directories": {
-      "output": "dist"
+      "output": "dist-electron",
+      "buildResources": "build"
     },
+    "files": [
+      "electron/**/*",
+      "server/dist/**/*",
+      "server/package.json",
+      "client/dist/**/*",
+      "package.json",
+      "package-lock.json"
+    ],
+    "extraResources": [
+      {
+        "from": "boletos",
+        "to": "boletos",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "AtualizacaoSistema-${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-Portable.${ext}"
     }
   },
-  "dependencies": {
-    "dayjs": "^1.11.13",
-    "exceljs": "^4.4.0",
-    "express": "^4.21.2"
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "cross-env": "^10.1.0",
+    "electron": "^39.1.2",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^9.0.3"
   }
 }

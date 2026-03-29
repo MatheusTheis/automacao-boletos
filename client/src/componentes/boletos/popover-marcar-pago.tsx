@@ -1,0 +1,111 @@
+import { useState } from 'react';
+import { Boleto } from '../../tipos/boletos';
+import { formatarMoeda } from '../../utilitarios/formatacao';
+import { useMarcarPago } from '../../ganchos/use-marcar-pago';
+
+interface PropriedadesPopoverMarcarPago {
+  boleto: Boleto;
+  aoFechar: () => void;
+  aoConcluir?: () => void;
+}
+
+export default function PopoverMarcarPago({ boleto, aoFechar, aoConcluir }: PropriedadesPopoverMarcarPago) {
+  const hoje = new Date().toISOString().split('T')[0];
+  const [dataPagamento, setDataPagamento] = useState(hoje);
+  const [valorPago, setValorPago] = useState(boleto.valor.toString());
+  const { mutate: marcarPago, isPending } = useMarcarPago();
+
+  const aoEnviar = (evento: React.FormEvent) => {
+    evento.preventDefault();
+
+    const valorNumerico = parseFloat(valorPago);
+    if (Number.isNaN(valorNumerico) || valorNumerico <= 0) {
+      alert('Valor invalido');
+      return;
+    }
+
+    marcarPago(
+      { boleto, dataPagamento, valorPago: valorNumerico },
+      {
+        onSuccess: () => {
+          alert('Boleto marcado como pago com sucesso.');
+          aoConcluir?.();
+          aoFechar();
+        },
+        onError: erro => {
+          alert(`Erro: ${erro.message}`);
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+      <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Marcar como Pago</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Cliente: <span className="font-medium">{boleto.cliente}</span>
+            </p>
+            <p className="text-sm text-gray-600">
+              Nosso Numero: <span className="font-mono font-medium">{boleto.nossoNumero}</span>
+            </p>
+          </div>
+          <button onClick={aoFechar} className="text-gray-400 hover:text-gray-600" disabled={isPending}>
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={aoEnviar} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Data do Pagamento</label>
+            <input
+              type="date"
+              value={dataPagamento}
+              onChange={evento => setDataPagamento(evento.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              disabled={isPending}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Valor Pago (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={valorPago}
+              onChange={evento => setValorPago(evento.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              disabled={isPending}
+            />
+            <p className="mt-1 text-xs text-gray-500">Valor original: {formatarMoeda(boleto.valor)}</p>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={aoFechar}
+              className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+              disabled={isPending}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex-1 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isPending}
+            >
+              {isPending ? 'Salvando...' : 'Marcar como Pago'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
