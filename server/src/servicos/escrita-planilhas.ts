@@ -111,8 +111,8 @@ export function atualizarBoletoNaPlanilha(
   arquivoExcel: string,
   nossoNumero: string,
   dadosPagamento: {
-    dataPagamento: string;
-    valorPago: number;
+    dataPagamento?: string;
+    valorPago?: number;
     situacao?: string;
   }
 ): boolean {
@@ -140,7 +140,12 @@ export function atualizarBoletoNaPlanilha(
         const numeroBuscado = nossoNumero.replace(/[.\-\s]/g, '');
 
         if (numeroLinha === numeroBuscado) {
-          linhas[i][colunaSituacao] = dadosPagamento.situacao || `Pago ${formatarDataBrasileira(dadosPagamento.dataPagamento)}`;
+          linhas[i][colunaSituacao] =
+            typeof dadosPagamento.situacao === 'string'
+              ? dadosPagamento.situacao
+              : dadosPagamento.dataPagamento
+                ? `Pago ${formatarDataBrasileira(dadosPagamento.dataPagamento)}`
+                : '';
           workbook.Sheets[nomeAba] = XLSX.utils.aoa_to_sheet(linhas);
           boletoAtualizado = true;
           break;
@@ -172,6 +177,15 @@ export function marcarComoPago(boleto: Boleto, dataPagamento: string, valorPago?
     dataPagamento,
     valorPago: valorPago || boleto.valor,
     situacao: `Pago ${formatarDataBrasileira(dataPagamento)}`,
+  });
+}
+
+export function desmarcarComoPago(boleto: Boleto): boolean {
+  const ano = new Date(boleto.vencimento).getFullYear();
+  const arquivoExcel = `${boleto.empresa}${ano}.xlsx`;
+
+  return atualizarBoletoNaPlanilha(arquivoExcel, boleto.nossoNumero, {
+    situacao: '',
   });
 }
 

@@ -106,14 +106,14 @@ export default function CardsResumo({ resumo }: PropriedadesCardsResumo) {
     <section className="mb-6">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Resumo Geral</h2>
-          <p className="text-sm text-gray-500">Controle visual rapido dos principais indicadores.</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Resumo Geral</h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Controle visual rapido dos principais indicadores.</p>
         </div>
 
         <button
           type="button"
           onClick={alternarVisibilidade}
-          className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
+          className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           aria-pressed={!valoresVisiveis}
         >
           {valoresVisiveis ? (
@@ -144,7 +144,7 @@ export default function CardsResumo({ resumo }: PropriedadesCardsResumo) {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
         {cards.map(card => (
-          <div key={card.titulo} className={`rounded-lg p-4 shadow ${card.cor}`}>
+          <div key={card.titulo} className={`rounded-lg p-4 shadow ring-1 ring-inset ring-white/40 dark:ring-slate-800 ${card.cor}`}>
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-medium">{card.titulo}</p>
               <span>{card.icone}</span>

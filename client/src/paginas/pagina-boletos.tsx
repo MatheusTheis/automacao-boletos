@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import CardsResumo from '../componentes/boletos/cards-resumo';
@@ -6,6 +6,8 @@ import PainelFiltros from '../componentes/boletos/painel-filtros';
 import TabelaBoletos from '../componentes/boletos/tabela-boletos';
 import { montarUrlApi } from '../servicos/api';
 import { Empresa, RespostaBoletos } from '../tipos/boletos';
+
+const CHAVE_TEMA = 'tema-escuro-boletos';
 
 export default function PaginaBoletos() {
   const navigate = useNavigate();
@@ -16,7 +18,19 @@ export default function PaginaBoletos() {
   const [ordenacao, setOrdenacao] = useState({ campo: 'vencimento', direcao: 'asc' as 'asc' | 'desc' });
   const [pagina, setPagina] = useState(1);
   const [baixandoPdf, setBaixandoPdf] = useState(false);
+  const [temaEscuro, setTemaEscuro] = useState(() => {
+    const temaSalvo = window.localStorage.getItem(CHAVE_TEMA);
+    if (temaSalvo !== null) {
+      return temaSalvo === 'true';
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const pageSize = 50;
+
+  useEffect(() => {
+    window.localStorage.setItem(CHAVE_TEMA, String(temaEscuro));
+  }, [temaEscuro]);
 
   const { data: meses = [] } = useQuery<string[]>({
     queryKey: ['meses', empresaSelecionada],
@@ -72,16 +86,48 @@ export default function PaginaBoletos() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className={temaEscuro ? 'dark' : ''}>
+      <div className="min-h-screen bg-gray-100 transition-colors duration-300 dark:bg-slate-950">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <div className="mb-6 flex items-start justify-between">
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gestao de Boletos</h1>
-              <p className="mt-2 text-sm text-gray-600">Visualize e gerencie todos os boletos cadastrados.</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Gestao de Boletos</h1>
+              <p className="mt-2 text-sm text-gray-600 dark:text-slate-400">
+                Visualize e gerencie todos os boletos cadastrados.
+              </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setTemaEscuro(valorAtual => !valorAtual)}
+                className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                aria-pressed={temaEscuro}
+                title={temaEscuro ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              >
+                {temaEscuro ? (
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 3v2.25m0 13.5V21m9-9h-2.25M5.25 12H3m15.114 6.364-1.591-1.591M7.477 7.477 5.886 5.886m12.228 0-1.591 1.591M7.477 16.523l-1.591 1.591M15 12a3 3 0 11-6 0 3 3 0 016 0Z"
+                    />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79Z"
+                    />
+                  </svg>
+                )}
+                {temaEscuro ? 'Modo claro' : 'Modo escuro'}
+              </button>
+
               <button
                 onClick={() => navigate('/cemavi')}
                 className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
@@ -103,7 +149,7 @@ export default function PaginaBoletos() {
             </div>
           </div>
 
-          <div className="border-b border-gray-200">
+          <div className="border-b border-gray-200 dark:border-slate-800">
             <nav className="-mb-px flex space-x-8" aria-label="Empresas">
               <button
                 onClick={() => {
@@ -115,8 +161,8 @@ export default function PaginaBoletos() {
                 }}
                 className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
                   empresaSelecionada === 'CEMAVI'
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    ? 'border-green-500 text-green-600 dark:text-green-400'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 CEMAVI
@@ -131,8 +177,8 @@ export default function PaginaBoletos() {
                 }}
                 className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
                   empresaSelecionada === 'MB'
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 MB
@@ -185,18 +231,21 @@ export default function PaginaBoletos() {
 
         {isLoading && (
           <div className="flex items-center justify-center py-12">
-            <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
+            <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600 dark:border-blue-400"></div>
           </div>
         )}
 
         {error && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-            <h3 className="text-sm font-medium text-red-800">Erro ao carregar boletos</h3>
-            <div className="mt-2 text-sm text-red-700">
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-950/40">
+            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Erro ao carregar boletos</h3>
+            <div className="mt-2 text-sm text-red-700 dark:text-red-300">
               <p>{error instanceof Error ? error.message : 'Erro desconhecido'}</p>
             </div>
             <div className="mt-4">
-              <button onClick={() => refetch()} className="text-sm font-medium text-red-800 hover:text-red-600">
+              <button
+                onClick={() => refetch()}
+                className="text-sm font-medium text-red-800 hover:text-red-600 dark:text-red-200 dark:hover:text-red-100"
+              >
                 Tentar novamente
               </button>
             </div>
@@ -220,7 +269,12 @@ export default function PaginaBoletos() {
           />
         )}
 
-        {data && <div className="mt-4 text-center text-sm text-gray-500">{data.pagination.total} boleto(s) encontrado(s)</div>}
+        {data && (
+          <div className="mt-4 text-center text-sm text-gray-500 dark:text-slate-400">
+            {data.pagination.total} boleto(s) encontrado(s)
+          </div>
+        )}
+        </div>
       </div>
     </div>
   );

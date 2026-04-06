@@ -4,7 +4,7 @@ import path from 'path';
 import dayjs from 'dayjs';
 import { gerarPdfAtrasos } from './servicos/geracao-pdf-atrasos.js';
 import { calcularResumo, lerArquivosBoletos, lerBoletos, obterDiretorioBoletos } from './servicos/leitura-planilhas.js';
-import { marcarComoPago, registrarNovoBoleto } from './servicos/escrita-planilhas.js';
+import { desmarcarComoPago, marcarComoPago, registrarNovoBoleto } from './servicos/escrita-planilhas.js';
 import { Boleto, Empresa, RespostaBoletos } from './tipos/boletos.js';
 
 const app = express();
@@ -70,6 +70,10 @@ function obterValorOrdenacao(boleto: Boleto, campo: string): number | string {
     default:
       return new Date(boleto.vencimento).getTime();
   }
+}
+
+function normalizarNossoNumero(valor: string): string {
+  return valor.replace(/[.\-\s]/g, '');
 }
 
 app.get('/api/boletos', (req, res) => {
@@ -226,7 +230,7 @@ app.post('/api/boletos/marcar-pago', (req, res) => {
 
     const boleto = obterBoletos().find(
       item =>
-        item.nossoNumero.replace(/[.\-\s]/g, '') === nossoNumero.replace(/[.\-\s]/g, '') &&
+        normalizarNossoNumero(item.nossoNumero) === normalizarNossoNumero(nossoNumero) &&
         item.empresa === empresa
     );
 
@@ -244,6 +248,37 @@ app.post('/api/boletos/marcar-pago', (req, res) => {
   } catch (erro) {
     console.error('Erro ao marcar boleto como pago:', erro);
     return res.status(500).json({ erro: 'Erro ao marcar boleto como pago' });
+  }
+});
+
+app.post('/api/boletos/desmarcar-pago', (req, res) => {
+  try {
+    const { nossoNumero, empresa } = req.body;
+
+    if (!nossoNumero || !empresa) {
+      return res.status(400).json({ erro: 'Dados incompletos' });
+    }
+
+    const boleto = obterBoletos().find(
+      item =>
+        normalizarNossoNumero(item.nossoNumero) === normalizarNossoNumero(nossoNumero) &&
+        item.empresa === empresa
+    );
+
+    if (!boleto) {
+      return res.status(404).json({ erro: 'Boleto nao encontrado' });
+    }
+
+    const sucesso = desmarcarComoPago(boleto);
+    if (!sucesso) {
+      return res.status(500).json({ erro: 'Erro ao desmarcar boleto como pago' });
+    }
+
+    cache = null;
+    return res.json({ sucesso: true, mensagem: 'Boleto desmarcado como pago com sucesso' });
+  } catch (erro) {
+    console.error('Erro ao desmarcar boleto como pago:', erro);
+    return res.status(500).json({ erro: 'Erro ao desmarcar boleto como pago' });
   }
 });
 
