@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Boleto } from '../../tipos/boletos';
 import { formatarDataIso, formatarMoeda } from '../../utilitarios/formatacao';
 import PopoverMarcarPago from './popover-marcar-pago';
@@ -23,6 +23,32 @@ export default function TabelaBoletos({
 }: PropriedadesTabelaBoletos) {
   const [boletoParaMarcarPago, setBoletoParaMarcarPago] = useState<Boleto | null>(null);
   const [boletoParaDesmarcarPago, setBoletoParaDesmarcarPago] = useState<Boleto | null>(null);
+  const [aviso, setAviso] = useState<{ mensagem: string; tipo: 'sucesso' | 'erro' } | null>(null);
+
+  useEffect(() => {
+    if (!aviso) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setAviso(null);
+    }, 5000);
+
+    const fecharAoClicarNaTela = () => {
+      setAviso(null);
+    };
+
+    window.addEventListener('pointerdown', fecharAoClicarNaTela);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pointerdown', fecharAoClicarNaTela);
+    };
+  }, [aviso]);
+
+  const exibirAviso = (mensagem: string, tipo: 'sucesso' | 'erro' = 'sucesso') => {
+    setAviso({ mensagem, tipo });
+  };
 
   const renderizarIconeOrdenacao = (campo: string) => {
     if (ordenacao.campo !== campo) {
@@ -33,18 +59,31 @@ export default function TabelaBoletos({
   };
 
   const obterClasseLinha = (status: string) => {
-    if (status === 'atrasado') return 'bg-red-50 dark:bg-red-950/30';
-    if (status === 'vence_hoje') return 'bg-yellow-50 dark:bg-yellow-950/30';
-    if (status === 'pago') return 'bg-green-50 dark:bg-green-950/30';
-    return '';
+    if (status === 'atrasado') {
+      return 'bg-red-100/90 hover:bg-red-100 dark:bg-red-950/55 dark:hover:bg-red-950/70';
+    }
+
+    if (status === 'vence_hoje') {
+      return 'bg-amber-100/90 hover:bg-amber-100 dark:bg-amber-950/55 dark:hover:bg-amber-950/70';
+    }
+
+    if (status === 'pago') {
+      return 'bg-emerald-100/90 hover:bg-emerald-100 dark:bg-emerald-950/55 dark:hover:bg-emerald-950/70';
+    }
+
+    return 'bg-blue-100/80 hover:bg-blue-100 dark:bg-blue-950/45 dark:hover:bg-blue-950/60';
   };
 
   const renderizarStatus = (boleto: Boleto) => {
     const estilos = {
-      pago: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
-      atrasado: 'bg-red-100 text-red-800 cursor-pointer hover:bg-red-200 dark:bg-red-900/50 dark:text-red-200 dark:hover:bg-red-900/70',
-      vence_hoje: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200',
-      em_aberto: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200',
+      pago:
+        'border border-emerald-300 bg-emerald-200 text-emerald-900 shadow-sm dark:border-emerald-700 dark:bg-emerald-900/70 dark:text-emerald-100',
+      atrasado:
+        'cursor-pointer border border-red-300 bg-red-200 text-red-900 shadow-sm hover:bg-red-300 dark:border-red-700 dark:bg-red-900/70 dark:text-red-100 dark:hover:bg-red-900',
+      vence_hoje:
+        'border border-amber-300 bg-amber-200 text-amber-900 shadow-sm dark:border-amber-700 dark:bg-amber-900/70 dark:text-amber-100',
+      em_aberto:
+        'cursor-pointer border border-blue-300 bg-blue-200 text-blue-900 shadow-sm hover:bg-blue-300 dark:border-blue-700 dark:bg-blue-900/70 dark:text-blue-100 dark:hover:bg-blue-900',
     };
 
     const rotulos = {
@@ -57,7 +96,7 @@ export default function TabelaBoletos({
     const classe = estilos[boleto.status] || 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200';
     const rotulo = rotulos[boleto.status] || boleto.status;
 
-    if (boleto.status === 'atrasado') {
+    if (boleto.status === 'atrasado' || boleto.status === 'em_aberto') {
       return (
         <button
           onClick={() => setBoletoParaMarcarPago(boleto)}
@@ -97,7 +136,19 @@ export default function TabelaBoletos({
   );
 
   return (
-    <div className="overflow-hidden rounded-lg bg-white shadow transition-colors dark:bg-slate-900 dark:shadow-black/20">
+    <div className="relative overflow-hidden rounded-lg bg-white shadow transition-colors dark:bg-slate-900 dark:shadow-black/20">
+      {aviso && (
+        <div
+          className={`pointer-events-none fixed right-4 top-4 z-[70] max-w-sm rounded-lg px-4 py-3 text-sm font-medium shadow-lg ${
+            aviso.tipo === 'erro'
+              ? 'border border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/90 dark:text-red-200'
+              : 'border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/90 dark:text-emerald-200'
+          }`}
+        >
+          {aviso.mensagem}
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
           <thead className="bg-gray-50 dark:bg-slate-950/70">
@@ -120,13 +171,13 @@ export default function TabelaBoletos({
               </tr>
             ) : (
               boletos.map((boleto, indice) => (
-                <tr key={`${boleto.nossoNumero}-${indice}`} className={obterClasseLinha(boleto.status)}>
-                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-slate-100">{boleto.cliente}</td>
-                  <td className="px-4 py-3 font-mono text-sm text-gray-900 dark:text-slate-100">{boleto.nossoNumero}</td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-slate-100">{formatarMoeda(boleto.valor)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-400">{formatarDataIso(boleto.emissao)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-400">{formatarDataIso(boleto.vencimento)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-400">{boleto.situacao || '-'}</td>
+                <tr key={`${boleto.nossoNumero}-${indice}`} className={`transition-colors ${obterClasseLinha(boleto.status)}`}>
+                  <td className="px-4 py-3 text-sm text-gray-950 dark:text-slate-50">{boleto.cliente}</td>
+                  <td className="px-4 py-3 font-mono text-sm text-gray-950 dark:text-slate-50">{boleto.nossoNumero}</td>
+                  <td className="px-4 py-3 text-sm text-gray-950 dark:text-slate-50">{formatarMoeda(boleto.valor)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-800 dark:text-slate-200">{formatarDataIso(boleto.emissao)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-slate-100">{formatarDataIso(boleto.vencimento)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-800 dark:text-slate-200">{boleto.situacao || '-'}</td>
                   <td className="px-4 py-3">{renderizarStatus(boleto)}</td>
                 </tr>
               ))
@@ -136,13 +187,18 @@ export default function TabelaBoletos({
       </div>
 
       {boletoParaMarcarPago && (
-        <PopoverMarcarPago boleto={boletoParaMarcarPago} aoFechar={() => setBoletoParaMarcarPago(null)} />
+        <PopoverMarcarPago
+          boleto={boletoParaMarcarPago}
+          aoFechar={() => setBoletoParaMarcarPago(null)}
+          aoConcluir={exibirAviso}
+        />
       )}
 
       {boletoParaDesmarcarPago && (
         <PopoverDesmarcarPago
           boleto={boletoParaDesmarcarPago}
           aoFechar={() => setBoletoParaDesmarcarPago(null)}
+          aoConcluir={exibirAviso}
         />
       )}
 

@@ -5,7 +5,7 @@ import { useDesmarcarPago } from '../../ganchos/use-desmarcar-pago';
 interface PropriedadesPopoverDesmarcarPago {
   boleto: Boleto;
   aoFechar: () => void;
-  aoConcluir?: () => void;
+  aoConcluir?: (mensagem: string, tipo?: 'sucesso' | 'erro') => void;
 }
 
 export default function PopoverDesmarcarPago({
@@ -20,12 +20,11 @@ export default function PopoverDesmarcarPago({
       { boleto },
       {
         onSuccess: () => {
-          alert('Pagamento desmarcado com sucesso.');
-          aoConcluir?.();
+          aoConcluir?.('Pagamento desmarcado com sucesso.', 'erro');
           aoFechar();
         },
         onError: erro => {
-          alert(`Erro: ${erro.message}`);
+          aoConcluir?.(`Erro: ${erro.message}`, 'erro');
         },
       }
     );

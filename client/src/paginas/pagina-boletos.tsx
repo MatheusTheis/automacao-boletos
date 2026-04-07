@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import CardsResumo from '../componentes/boletos/cards-resumo';
 import PainelFiltros from '../componentes/boletos/painel-filtros';
 import TabelaBoletos from '../componentes/boletos/tabela-boletos';
 import { montarUrlApi } from '../servicos/api';
-import { Empresa, RespostaBoletos } from '../tipos/boletos';
+import { Empresa, ModoResumoBusca, RespostaBoletos } from '../tipos/boletos';
 
 const CHAVE_TEMA = 'tema-escuro-boletos';
 
@@ -15,6 +15,8 @@ export default function PaginaBoletos() {
   const [mes, setMes] = useState('');
   const [status, setStatus] = useState('');
   const [busca, setBusca] = useState('');
+  const [buscaDebounced, setBuscaDebounced] = useState('');
+  const [modoResumoBusca, setModoResumoBusca] = useState<ModoResumoBusca>('geral');
   const [ordenacao, setOrdenacao] = useState({ campo: 'vencimento', direcao: 'asc' as 'asc' | 'desc' });
   const [pagina, setPagina] = useState(1);
   const [baixandoPdf, setBaixandoPdf] = useState(false);
@@ -32,6 +34,16 @@ export default function PaginaBoletos() {
     window.localStorage.setItem(CHAVE_TEMA, String(temaEscuro));
   }, [temaEscuro]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setBuscaDebounced(busca);
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [busca]);
+
   const { data: meses = [] } = useQuery<string[]>({
     queryKey: ['meses', empresaSelecionada],
     queryFn: async () => {
@@ -41,24 +53,50 @@ export default function PaginaBoletos() {
     },
   });
 
-  const { data, isLoading, error, refetch } = useQuery<RespostaBoletos>({
-    queryKey: ['boletos', empresaSelecionada, mes, status, busca, ordenacao.campo, ordenacao.direcao, pagina],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      params.append('empresa', empresaSelecionada);
-      if (mes) params.append('mes', mes);
-      if (status) params.append('status', status);
-      if (busca) params.append('q', busca);
-      params.append('sort', ordenacao.campo);
-      params.append('dir', ordenacao.direcao);
-      params.append('page', pagina.toString());
-      params.append('pageSize', pageSize.toString());
+  const montarParametrosBoletos = ({
+    incluirBusca,
+    paginaConsulta = pagina,
+    tamanhoPagina = pageSize,
+  }: {
+    incluirBusca: boolean;
+    paginaConsulta?: number;
+    tamanhoPagina?: number;
+  }) => {
+    const params = new URLSearchParams();
+    params.append('empresa', empresaSelecionada);
+    if (mes) params.append('mes', mes);
+    if (status) params.append('status', status);
+    if (incluirBusca && buscaDebounced) params.append('q', buscaDebounced);
+    params.append('sort', ordenacao.campo);
+    params.append('dir', ordenacao.direcao);
+    params.append('page', paginaConsulta.toString());
+    params.append('pageSize', tamanhoPagina.toString());
+    return params;
+  };
 
+  const { data, isLoading, isFetching, error, refetch } = useQuery<RespostaBoletos>({
+    queryKey: ['boletos', empresaSelecionada, mes, status, buscaDebounced, ordenacao.campo, ordenacao.direcao, pagina],
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      const params = montarParametrosBoletos({ incluirBusca: true });
       const resposta = await fetch(montarUrlApi(`/api/boletos?${params}`));
       if (!resposta.ok) throw new Error('Erro ao buscar boletos');
       return resposta.json();
     },
   });
+
+  const { data: dadosResumoGeral } = useQuery<RespostaBoletos>({
+    queryKey: ['resumo-geral', empresaSelecionada, mes, status, ordenacao.campo, ordenacao.direcao],
+    enabled: modoResumoBusca === 'geral' && buscaDebounced.trim().length > 0,
+    queryFn: async () => {
+      const params = montarParametrosBoletos({ incluirBusca: false, paginaConsulta: 1, tamanhoPagina: 1 });
+      const resposta = await fetch(montarUrlApi(`/api/boletos?${params}`));
+      if (!resposta.ok) throw new Error('Erro ao buscar resumo geral');
+      return resposta.json();
+    },
+  });
+
+  const resumoCards = modoResumoBusca === 'pesquisa' ? data?.resumo : dadosResumoGeral?.resumo ?? data?.resumo;
 
   const exportarPdfAtrasos = async () => {
     setBaixandoPdf(true);
@@ -187,13 +225,15 @@ export default function PaginaBoletos() {
           </div>
         </div>
 
-        {data?.resumo && <CardsResumo resumo={data.resumo} />}
+        {resumoCards && <CardsResumo resumo={resumoCards} />}
 
         <PainelFiltros
           meses={meses}
           mesAtual={mes}
           statusAtual={status}
           buscaAtual={busca}
+          modoResumoBusca={modoResumoBusca}
+          buscando={isFetching && !!data}
           aoMudarMes={novoMes => {
             setMes(novoMes);
             setPagina(1);
@@ -206,6 +246,7 @@ export default function PaginaBoletos() {
             setBusca(novaBusca);
             setPagina(1);
           }}
+          aoMudarModoResumoBusca={setModoResumoBusca}
         />
 
         <div className="mb-4 flex justify-end gap-2">
@@ -229,7 +270,7 @@ export default function PaginaBoletos() {
           </button>
         </div>
 
-        {isLoading && (
+        {!data && isLoading && (
           <div className="flex items-center justify-center py-12">
             <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600 dark:border-blue-400"></div>
           </div>

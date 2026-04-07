@@ -6,7 +6,7 @@ import { useMarcarPago } from '../../ganchos/use-marcar-pago';
 interface PropriedadesPopoverMarcarPago {
   boleto: Boleto;
   aoFechar: () => void;
-  aoConcluir?: () => void;
+  aoConcluir?: (mensagem: string, tipo?: 'sucesso' | 'erro') => void;
 }
 
 export default function PopoverMarcarPago({ boleto, aoFechar, aoConcluir }: PropriedadesPopoverMarcarPago) {
@@ -20,7 +20,7 @@ export default function PopoverMarcarPago({ boleto, aoFechar, aoConcluir }: Prop
 
     const valorNumerico = parseFloat(valorPago);
     if (Number.isNaN(valorNumerico) || valorNumerico <= 0) {
-      alert('Valor invalido');
+      aoConcluir?.('Valor invalido. Informe um valor maior que zero.', 'erro');
       return;
     }
 
@@ -28,12 +28,11 @@ export default function PopoverMarcarPago({ boleto, aoFechar, aoConcluir }: Prop
       { boleto, dataPagamento, valorPago: valorNumerico },
       {
         onSuccess: () => {
-          alert('Boleto marcado como pago com sucesso.');
-          aoConcluir?.();
+          aoConcluir?.('Boleto marcado como pago com sucesso.', 'sucesso');
           aoFechar();
         },
         onError: erro => {
-          alert(`Erro: ${erro.message}`);
+          aoConcluir?.(`Erro: ${erro.message}`, 'erro');
         },
       }
     );

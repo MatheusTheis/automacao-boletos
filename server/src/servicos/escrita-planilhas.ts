@@ -107,6 +107,12 @@ function buscarDuplicado(workbook: XLSX.WorkBook, nossoNumero: string): string |
   return null;
 }
 
+function encontrarLinhaCabecalho(linhas: unknown[][]): number {
+  return linhas.findIndex(linha =>
+    Array.isArray(linha) && linha.some(coluna => coluna !== undefined && coluna !== null && String(coluna).trim() !== '')
+  );
+}
+
 export function atualizarBoletoNaPlanilha(
   arquivoExcel: string,
   nossoNumero: string,
@@ -127,14 +133,19 @@ export function atualizarBoletoNaPlanilha(
 
     for (const nomeAba of workbook.SheetNames) {
       const aba = workbook.Sheets[nomeAba];
-      const linhas = XLSX.utils.sheet_to_json(aba, { header: 1 }) as string[][];
-      const cabecalho = linhas[0];
+      const linhas = XLSX.utils.sheet_to_json(aba, { header: 1 }) as unknown[][];
+      const indiceCabecalho = encontrarLinhaCabecalho(linhas);
+      if (indiceCabecalho === -1) continue;
+
+      const cabecalho = linhas[indiceCabecalho];
+      if (!Array.isArray(cabecalho) || cabecalho.length === 0) continue;
+
       const colunaNossoNumero = cabecalho.findIndex(coluna => coluna?.toString().toLowerCase().includes('nosso'));
       const colunaSituacao = cabecalho.findIndex(coluna => coluna?.toString().toLowerCase().includes('situ'));
 
       if (colunaNossoNumero === -1 || colunaSituacao === -1) continue;
 
-      for (let i = 1; i < linhas.length; i += 1) {
+      for (let i = indiceCabecalho + 1; i < linhas.length; i += 1) {
         const linha = linhas[i];
         const numeroLinha = linha?.[colunaNossoNumero]?.toString().replace(/[.\-\s]/g, '');
         const numeroBuscado = nossoNumero.replace(/[.\-\s]/g, '');
