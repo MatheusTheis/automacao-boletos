@@ -33,21 +33,17 @@ function obterRaizProjeto() {
   return app.isPackaged ? app.getAppPath() : path.join(__dirname, '..');
 }
 
-function obterRaizProjetoDesempacotada() {
-  return app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked') : obterRaizProjeto();
-}
-
 function obterCaminhoServidor() {
   if (emDesenvolvimento) {
     return path.join(obterRaizProjeto(), 'server', 'src', 'index.ts');
   }
 
-  return path.join(obterRaizProjetoDesempacotada(), 'server', 'dist', 'index.js');
+  return path.join(obterRaizProjeto(), 'server', 'dist', 'index.js');
 }
 
 function obterDiretorioServidor() {
   return app.isPackaged
-    ? path.join(obterRaizProjetoDesempacotada(), 'server')
+    ? process.resourcesPath
     : path.join(obterRaizProjeto(), 'server');
 }
 
@@ -251,7 +247,7 @@ function criarJanela() {
       contextIsolation: true,
       webSecurity: true,
     },
-    title: 'Gestao de Boletos - CEMAVI e MB',
+    title: 'Gestao de Boletos',
     backgroundColor: '#f9fafb',
   });
 

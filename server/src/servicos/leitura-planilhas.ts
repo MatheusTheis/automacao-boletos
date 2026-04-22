@@ -36,11 +36,14 @@ export function obterDiretorioBoletos(): string {
 
 export function lerArquivosBoletos(): string[] {
   const diretorio = obterDiretorioBoletos();
+  if (!fs.existsSync(diretorio)) {
+    return [];
+  }
 
   return fs.readdirSync(diretorio).filter(nomeArquivo => {
     if (!nomeArquivo.endsWith('.xlsx')) return false;
     if (nomeArquivo.toUpperCase().includes('NAN')) return false;
-    return /^(CEMAVI|MB)(20\d{2})\.XLSX$/i.test(nomeArquivo);
+    return /^(.*?)(20\d{2})\.XLSX$/i.test(nomeArquivo);
   });
 }
 
@@ -116,7 +119,7 @@ function definirStatus(situacao: unknown, vencimento: Date, hoje: Date = new Dat
   return 'em_aberto';
 }
 
-export function lerBoletos(caminhoArquivo: string, empresa: Empresa): Boleto[] {
+export function lerBoletos(caminhoArquivo: string, empresa: Empresa, ano: number): Boleto[] {
   const workbook = XLSX.readFile(caminhoArquivo);
   const boletos: Boleto[] = [];
   const hoje = new Date();
@@ -146,6 +149,7 @@ export function lerBoletos(caminhoArquivo: string, empresa: Empresa): Boleto[] {
 
       boletos.push({
         empresa,
+        ano,
         cliente: cliente?.toString() || '',
         nossoNumero: nossoNumero?.toString() || '',
         valor: converterValorBrasileiro(valor),

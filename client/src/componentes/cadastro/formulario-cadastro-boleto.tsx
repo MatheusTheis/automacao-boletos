@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PainelEstatisticasCadastro from './painel-estatisticas-cadastro';
 import { useEstatisticasEmpresa } from '../../ganchos/use-estatisticas-empresa';
+import BotaoAlternarTema from '../compartilhado/botao-alternar-tema';
 import { carregarHistoricoClientes, salvarClienteNoHistorico } from '../../utilitarios/historico-clientes';
 import { aplicarMascaraData, aplicarMascaraNossoNumero } from '../../utilitarios/mascaras';
 import { DadosFormularioBoleto, Empresa } from '../../tipos/boletos';
@@ -140,19 +141,20 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
     }
   };
 
-  const classesInput = `w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:outline-none focus:ring-2 ${configuracao.classesTema.foco}`;
+  const classesInput = `w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 ${configuracao.classesTema.foco}`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 transition-colors duration-300 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{configuracao.tituloPagina}</h1>
-              <p className="mt-2 text-sm text-gray-600">{configuracao.descricaoPagina}</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{configuracao.tituloPagina}</h1>
+              <p className="mt-2 text-sm text-gray-600 dark:text-slate-400">{configuracao.descricaoPagina}</p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <BotaoAlternarTema />
               <button
                 onClick={() => navigate(configuracao.rotaAlternativa)}
                 className={`inline-flex items-center rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm ${configuracao.classesTema.secundario}`}
@@ -161,7 +163,7 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
               </button>
               <button
                 onClick={() => navigate('/')}
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -174,10 +176,10 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <div className="rounded-lg bg-white px-6 py-8 shadow">
+            <div className="rounded-lg bg-white px-6 py-8 shadow dark:bg-slate-900 dark:shadow-black/20">
               <form onSubmit={aoEnviar} className="space-y-6">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Cliente *</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Cliente *</label>
                   <input
                     ref={campoCliente}
                     type="text"
@@ -195,11 +197,11 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
                       <option key={cliente} value={cliente} />
                     ))}
                   </datalist>
-                  <p className="mt-1 text-xs text-gray-500">Dica: Ctrl + Space para autocompletar com ultimo cliente</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">Dica: Ctrl + Space para autocompletar com ultimo cliente</p>
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Nosso Numero *</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Nosso Numero *</label>
                   <input
                     ref={campoNossoNumero}
                     type="text"
@@ -214,7 +216,7 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Valor *</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Valor *</label>
                   <input
                     ref={campoValor}
                     type="text"
@@ -230,7 +232,7 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Emissao *</label>
+                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Emissao *</label>
                     <input
                       ref={campoEmissao}
                       type="text"
@@ -245,7 +247,7 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Vencimento *</label>
+                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Vencimento *</label>
                     <input
                       ref={campoVencimento}
                       type="text"
@@ -269,7 +271,13 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
               </form>
 
               {mensagem && (
-                <div className={`mt-4 rounded-md p-4 ${mensagem.tipo === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                <div
+                  className={`mt-4 rounded-md p-4 ${
+                    mensagem.tipo === 'success'
+                      ? 'bg-green-50 text-green-800 dark:bg-emerald-950/50 dark:text-emerald-200'
+                      : 'bg-red-50 text-red-800 dark:bg-red-950/50 dark:text-red-200'
+                  }`}
+                >
                   <p className="text-sm font-medium">{mensagem.texto}</p>
                 </div>
               )}

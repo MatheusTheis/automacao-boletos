@@ -6,6 +6,11 @@ export function useEstatisticasEmpresa(empresa: Empresa) {
   const [estatisticas, setEstatisticas] = useState<EstatisticasEmpresa | null>(null);
 
   useEffect(() => {
+    if (!empresa) {
+      setEstatisticas(null);
+      return;
+    }
+
     let ativo = true;
 
     async function carregar() {

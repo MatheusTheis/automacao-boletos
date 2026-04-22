@@ -2,17 +2,17 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { montarUrlApi } from '../servicos/api';
 import { Boleto } from '../tipos/boletos';
 
-interface ParametrosDesmarcarPago {
+interface ParametrosExcluirBoleto {
   boleto: Boleto;
 }
 
-export function useDesmarcarPago() {
+export function useExcluirBoleto() {
   const clienteQuery = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ boleto }: ParametrosDesmarcarPago) => {
-      const resposta = await fetch(montarUrlApi('/api/boletos/desmarcar-pago'), {
-        method: 'POST',
+    mutationFn: async ({ boleto }: ParametrosExcluirBoleto) => {
+      const resposta = await fetch(montarUrlApi('/api/boletos'), {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -25,13 +25,15 @@ export function useDesmarcarPago() {
 
       if (!resposta.ok) {
         const erro = await resposta.json();
-        throw new Error(erro.erro || erro.error || 'Erro ao desmarcar boleto como pago');
+        throw new Error(erro.erro || erro.error || 'Erro ao excluir boleto');
       }
 
       return resposta.json();
     },
     onSuccess: () => {
       clienteQuery.invalidateQueries({ queryKey: ['boletos'] });
+      clienteQuery.invalidateQueries({ queryKey: ['meses'] });
+      clienteQuery.invalidateQueries({ queryKey: ['resumo-geral'] });
     },
   });
 }

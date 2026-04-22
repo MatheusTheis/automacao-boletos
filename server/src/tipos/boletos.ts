@@ -1,8 +1,16 @@
 export type StatusBoleto = 'pago' | 'atrasado' | 'vence_hoje' | 'em_aberto';
-export type Empresa = 'CEMAVI' | 'MB';
+export type Empresa = string;
+
+export interface EmpresaSistema {
+  id: string;
+  nome: string;
+  camposPadrao?: string[];
+  tabelas?: string[];
+}
 
 export interface Boleto {
   empresa: Empresa;
+  ano: number;
   cliente: string;
   nossoNumero: string;
   valor: number;

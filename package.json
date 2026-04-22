@@ -1,7 +1,7 @@
 {
   "name": "gestao-boletos",
   "version": "1.0.1",
-  "description": "Sistema de gestao de boletos CEMAVI e MB",
+  "description": "Sistema de gestao de boletos multiempresa",
   "author": "Matheus Theis",
   "main": "electron/main.js",
   "private": true,

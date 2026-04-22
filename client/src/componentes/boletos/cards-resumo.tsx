@@ -117,7 +117,7 @@ export default function CardsResumo({ resumo }: PropriedadesCardsResumo) {
           aria-pressed={!valoresVisiveis}
         >
           {valoresVisiveis ? (
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path
                 strokeLinecap="round"
@@ -127,7 +127,7 @@ export default function CardsResumo({ resumo }: PropriedadesCardsResumo) {
               />
             </svg>
           ) : (
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.477 10.487A3 3 0 0012 15a3 3 0 002.121-.879" />
               <path
