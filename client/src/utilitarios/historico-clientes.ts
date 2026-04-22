@@ -10,3 +10,11 @@ export function salvarClienteNoHistorico(chave: string, cliente: string): string
   localStorage.setItem(chave, JSON.stringify(historico));
   return historico;
 }
+
+export function carregarUltimoValor(chave: string): string {
+  return localStorage.getItem(chave) || '';
+}
+
+export function salvarUltimoValor(chave: string, valor: string): void {
+  localStorage.setItem(chave, valor);
+}

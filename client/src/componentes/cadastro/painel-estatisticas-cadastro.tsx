@@ -17,15 +17,19 @@ export default function PainelEstatisticasCadastro({
   empresa,
   estatisticas,
 }: PropriedadesPainelEstatisticasCadastro) {
+  const totalEstatisticas = estatisticas
+    ? estatisticas.abertos + estatisticas.pagos + estatisticas.vencendo + estatisticas.vencidos
+    : 0;
+
   return (
-    <div className="rounded-lg bg-white px-6 py-8 shadow dark:bg-slate-900 dark:shadow-black/20">
-      <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-slate-100">Estatisticas {empresa}</h3>
+    <div className="rounded-lg bg-white px-6 py-8 shadow transition-colors dark:bg-slate-900 dark:shadow-black/20">
+      <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-slate-100">Estatísticas {empresa}</h3>
       {estatisticas ? (
         <div className="space-y-4">
-          <CartaoEstatistica titulo="Abertos" valor={estatisticas.abertos} total={estatisticas.abertos + estatisticas.pagos} cor="blue" />
-          <CartaoEstatistica titulo="Pagos" valor={estatisticas.pagos} total={estatisticas.abertos + estatisticas.pagos} cor="green" />
-          <CartaoEstatistica titulo="Vencendo" valor={estatisticas.vencendo} total={estatisticas.abertos || 1} cor="yellow" />
-          <CartaoEstatistica titulo="Vencidos" valor={estatisticas.vencidos} total={estatisticas.abertos || 1} cor="red" />
+          <CartaoEstatistica titulo="Abertos" valor={estatisticas.abertos} total={totalEstatisticas} cor="blue" />
+          <CartaoEstatistica titulo="Pagos" valor={estatisticas.pagos} total={totalEstatisticas} cor="green" />
+          <CartaoEstatistica titulo="Vencendo" valor={estatisticas.vencendo} total={totalEstatisticas} cor="yellow" />
+          <CartaoEstatistica titulo="Vencidos" valor={estatisticas.vencidos} total={totalEstatisticas} cor="red" />
         </div>
       ) : (
         <div className="flex items-center justify-center py-8">
@@ -41,6 +45,7 @@ export default function PainelEstatisticasCadastro({
 
 function CartaoEstatistica({ titulo, valor, total, cor }: PropriedadesCartaoEstatistica) {
   const percentual = total > 0 ? (valor / total) * 100 : 0;
+  const larguraBarra = Math.min(percentual, 100);
   const cores = {
     blue: 'bg-blue-500',
     green: 'bg-green-500',
@@ -49,11 +54,11 @@ function CartaoEstatistica({ titulo, valor, total, cor }: PropriedadesCartaoEsta
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-      <div className="text-sm font-medium text-gray-600 dark:text-slate-300">{titulo}</div>
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950/70">
+      <div className="text-sm font-medium text-gray-600 dark:text-slate-400">{titulo}</div>
       <div className="mt-1 text-2xl font-bold text-gray-900 dark:text-slate-100">{valor}</div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-slate-700">
-        <div className={`h-full ${cores[cor]} transition-all`} style={{ width: `${percentual}%` }} />
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-slate-800">
+        <div className={`h-full ${cores[cor]} transition-all`} style={{ width: `${larguraBarra}%` }} />
       </div>
       <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">{percentual.toFixed(0)}%</div>
     </div>

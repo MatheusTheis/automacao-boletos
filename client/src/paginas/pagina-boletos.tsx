@@ -761,7 +761,7 @@ export default function PaginaBoletos() {
             <div className="flex flex-wrap items-center justify-end gap-2">
               <BotaoAlternarTema />
               <button
-                onClick={() => navigate('/cadastro')}
+                onClick={() => navigate('/cadastro', { state: { empresaSelecionada } })}
                 className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
               >
                 <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import PainelEstatisticasCadastro from './painel-estatisticas-cadastro';
 import { useEstatisticasEmpresa } from '../../ganchos/use-estatisticas-empresa';
 import BotaoAlternarTema from '../compartilhado/botao-alternar-tema';
-import { carregarHistoricoClientes, salvarClienteNoHistorico } from '../../utilitarios/historico-clientes';
+import {
+  carregarHistoricoClientes,
+  carregarUltimoValor,
+  salvarClienteNoHistorico,
+  salvarUltimoValor,
+} from '../../utilitarios/historico-clientes';
 import { aplicarMascaraData, aplicarMascaraNossoNumero } from '../../utilitarios/mascaras';
 import { DadosFormularioBoleto, Empresa } from '../../tipos/boletos';
 import { montarUrlApi } from '../../servicos/api';
@@ -32,6 +37,8 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
   const navigate = useNavigate();
   const estatisticas = useEstatisticasEmpresa(configuracao.empresa);
   const chaveHistorico = `clientes-${configuracao.empresa.toLowerCase()}`;
+  const chaveUltimoValor = `ultimo-valor-${configuracao.empresa.toLowerCase()}`;
+  const chaveUltimaEmissao = `ultima-emissao-${configuracao.empresa.toLowerCase()}`;
   const [historicoClientes, setHistoricoClientes] = useState<string[]>(() => carregarHistoricoClientes(chaveHistorico));
   const [carregando, setCarregando] = useState(false);
   const [mensagem, setMensagem] = useState<MensagemFormulario | null>(null);
@@ -49,6 +56,9 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
   const campoValor = useRef<HTMLInputElement>(null);
   const campoEmissao = useRef<HTMLInputElement>(null);
   const campoVencimento = useRef<HTMLInputElement>(null);
+  const timerAtalhoPreenchimento = useRef<number | null>(null);
+  const campoAtalhoPressionado = useRef<keyof DadosFormularioBoleto | null>(null);
+  const preenchimentoCompletoExecutado = useRef(false);
 
   const atualizarCampo = (campo: keyof DadosFormularioBoleto, valor: string) => {
     if (campo === 'emiss' || campo === 'venc') {
@@ -60,6 +70,52 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
     setDadosFormulario(estadoAtual => ({ ...estadoAtual, [campo]: valor }));
   };
 
+  const preencherCampoComUltimoValor = (campo: keyof DadosFormularioBoleto) => {
+    if (campo === 'cliente') {
+      const ultimoCliente = historicoClientes[0] || '';
+      if (ultimoCliente) {
+        setDadosFormulario(estadoAtual => ({ ...estadoAtual, cliente: ultimoCliente }));
+      }
+    }
+
+    if (campo === 'valor') {
+      const ultimoValor = carregarUltimoValor(chaveUltimoValor);
+      if (ultimoValor) {
+        setDadosFormulario(estadoAtual => ({ ...estadoAtual, valor: ultimoValor }));
+      }
+    }
+
+    if (campo === 'emiss') {
+      const ultimaEmissao = carregarUltimoValor(chaveUltimaEmissao);
+      if (ultimaEmissao) {
+        setDadosFormulario(estadoAtual => ({ ...estadoAtual, emiss: ultimaEmissao }));
+      }
+    }
+  };
+
+  const preencherCamposRepetitivos = () => {
+    const ultimoCliente = historicoClientes[0] || '';
+    const ultimoValor = carregarUltimoValor(chaveUltimoValor);
+    const ultimaEmissao = carregarUltimoValor(chaveUltimaEmissao);
+
+    setDadosFormulario(estadoAtual => ({
+      ...estadoAtual,
+      cliente: ultimoCliente || estadoAtual.cliente,
+      valor: ultimoValor || estadoAtual.valor,
+      emiss: ultimaEmissao || estadoAtual.emiss,
+    }));
+  };
+
+  const limparAtalhoPressionado = () => {
+    if (timerAtalhoPreenchimento.current !== null) {
+      window.clearTimeout(timerAtalhoPreenchimento.current);
+      timerAtalhoPreenchimento.current = null;
+    }
+
+    campoAtalhoPressionado.current = null;
+    preenchimentoCompletoExecutado.current = false;
+  };
+
   const aoPressionarTecla = (
     evento: React.KeyboardEvent<HTMLInputElement>,
     proximoCampo?: React.RefObject<HTMLInputElement>
@@ -69,11 +125,22 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
       proximoCampo?.current?.focus();
     }
 
-    if (evento.key === ' ' && evento.ctrlKey && evento.currentTarget.name === 'cliente') {
+    if (
+      evento.key === ' ' &&
+      evento.ctrlKey &&
+      (evento.currentTarget.name === 'cliente' || evento.currentTarget.name === 'valor' || evento.currentTarget.name === 'emiss')
+    ) {
       evento.preventDefault();
-      const ultimoCliente = historicoClientes[0] || '';
-      if (ultimoCliente) {
-        setDadosFormulario(estadoAtual => ({ ...estadoAtual, cliente: ultimoCliente }));
+      const campoAtual = evento.currentTarget.name as keyof DadosFormularioBoleto;
+
+      if (!evento.repeat && timerAtalhoPreenchimento.current === null) {
+        campoAtalhoPressionado.current = campoAtual;
+        preenchimentoCompletoExecutado.current = false;
+        timerAtalhoPreenchimento.current = window.setTimeout(() => {
+          preencherCamposRepetitivos();
+          preenchimentoCompletoExecutado.current = true;
+          timerAtalhoPreenchimento.current = null;
+        }, 1500);
       }
     }
 
@@ -86,6 +153,25 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
       if (evento.key === '-') {
         evento.preventDefault();
       }
+    }
+  };
+
+  const aoSoltarTecla = (evento: React.KeyboardEvent<HTMLInputElement>) => {
+    if (evento.key !== ' ') {
+      return;
+    }
+
+    if (!campoAtalhoPressionado.current) {
+      return;
+    }
+
+    const campoPressionado = campoAtalhoPressionado.current;
+    const houvePreenchimentoCompleto = preenchimentoCompletoExecutado.current;
+
+    limparAtalhoPressionado();
+
+    if (!houvePreenchimentoCompleto) {
+      preencherCampoComUltimoValor(campoPressionado);
     }
   };
 
@@ -128,6 +214,8 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
       });
       const historicoAtualizado = salvarClienteNoHistorico(chaveHistorico, dadosFormulario.cliente);
       setHistoricoClientes(historicoAtualizado);
+      salvarUltimoValor(chaveUltimoValor, dadosFormulario.valor);
+      salvarUltimoValor(chaveUltimaEmissao, dadosFormulario.emiss);
       limparFormulario();
       setTimeout(() => campoCliente.current?.focus(), 100);
     } catch (erro) {
@@ -141,13 +229,13 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
     }
   };
 
-  const classesInput = `w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 ${configuracao.classesTema.foco}`;
+  const classesInput = `w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 ${configuracao.classesTema.foco}`;
 
   return (
     <div className="min-h-screen bg-gray-50 transition-colors duration-300 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{configuracao.tituloPagina}</h1>
               <p className="mt-2 text-sm text-gray-600 dark:text-slate-400">{configuracao.descricaoPagina}</p>
@@ -176,7 +264,7 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <div className="rounded-lg bg-white px-6 py-8 shadow dark:bg-slate-900 dark:shadow-black/20">
+            <div className="rounded-lg bg-white px-6 py-8 shadow transition-colors dark:bg-slate-900 dark:shadow-black/20">
               <form onSubmit={aoEnviar} className="space-y-6">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">Cliente *</label>
@@ -188,6 +276,8 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
                     value={dadosFormulario.cliente}
                     onChange={evento => atualizarCampo('cliente', evento.target.value)}
                     onKeyDown={evento => aoPressionarTecla(evento, campoNossoNumero)}
+                    onKeyUp={aoSoltarTecla}
+                    onBlur={limparAtalhoPressionado}
                     list={`clientes-${configuracao.empresa.toLowerCase()}`}
                     autoComplete="off"
                     className={classesInput}
@@ -197,7 +287,7 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
                       <option key={cliente} value={cliente} />
                     ))}
                   </datalist>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">Dica: Ctrl + Space para autocompletar com ultimo cliente</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">Dica: Ctrl + Space repete este campo. Segure por 1,5 segundo para preencher cliente, valor e emissao.</p>
                 </div>
 
                 <div>
@@ -225,9 +315,12 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
                     value={dadosFormulario.valor}
                     onChange={evento => atualizarCampo('valor', evento.target.value)}
                     onKeyDown={evento => aoPressionarTecla(evento, campoEmissao)}
+                    onKeyUp={aoSoltarTecla}
+                    onBlur={limparAtalhoPressionado}
                     placeholder="R$ 0,00"
                     className={classesInput}
                   />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">Dica: Ctrl + Space repete este campo. Segure por 1,5 segundo para preencher cliente, valor e emissao.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -241,9 +334,12 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
                       value={dadosFormulario.emiss}
                       onChange={evento => atualizarCampo('emiss', evento.target.value)}
                       onKeyDown={evento => aoPressionarTecla(evento, campoVencimento)}
+                      onKeyUp={aoSoltarTecla}
+                      onBlur={limparAtalhoPressionado}
                       placeholder="DD/MM/AAAA"
                       className={classesInput}
                     />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">Dica: Ctrl + Space repete este campo. Segure por 1,5 segundo para preencher cliente, valor e emissao.</p>
                   </div>
 
                   <div>
@@ -274,8 +370,8 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
                 <div
                   className={`mt-4 rounded-md p-4 ${
                     mensagem.tipo === 'success'
-                      ? 'bg-green-50 text-green-800 dark:bg-emerald-950/50 dark:text-emerald-200'
-                      : 'bg-red-50 text-red-800 dark:bg-red-950/50 dark:text-red-200'
+                      ? 'bg-green-50 text-green-800 dark:bg-green-950/40 dark:text-green-200'
+                      : 'bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-200'
                   }`}
                 >
                   <p className="text-sm font-medium">{mensagem.texto}</p>

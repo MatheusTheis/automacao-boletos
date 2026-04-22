@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Empresa, EstatisticasEmpresa } from '../tipos/boletos';
 import { montarUrlApi } from '../servicos/api';
 
-export function useEstatisticasEmpresa(empresa: Empresa) {
+export function useEstatisticasEmpresa(empresa: Empresa, ano?: string) {
   const [estatisticas, setEstatisticas] = useState<EstatisticasEmpresa | null>(null);
 
   useEffect(() => {
@@ -15,7 +15,13 @@ export function useEstatisticasEmpresa(empresa: Empresa) {
 
     async function carregar() {
       try {
-        const resposta = await fetch(montarUrlApi(`/api/estatisticas/${empresa}`));
+        const params = new URLSearchParams();
+        if (ano) {
+          params.append('ano', ano);
+        }
+
+        const sufixo = params.toString() ? `?${params.toString()}` : '';
+        const resposta = await fetch(montarUrlApi(`/api/estatisticas/${empresa}${sufixo}`));
         if (!resposta.ok) {
           return;
         }
@@ -36,7 +42,7 @@ export function useEstatisticasEmpresa(empresa: Empresa) {
       ativo = false;
       clearInterval(intervalo);
     };
-  }, [empresa]);
+  }, [empresa, ano]);
 
   return estatisticas;
 }
