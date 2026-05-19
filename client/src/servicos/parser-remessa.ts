@@ -47,7 +47,7 @@ function converterDataDdmmaaParaIso(dataTexto: string): string | null {
   }
 
   const data = new Date(ano, mes - 1, dia);
-  if (data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia) {
+  if (data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia) { // Verifica se a data é válida
     return null;
   }
 

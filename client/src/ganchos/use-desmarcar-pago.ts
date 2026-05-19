@@ -17,7 +17,7 @@ export function useDesmarcarPago() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          nossoNumero: boleto.nossoNumero,
+          nossoNumero: boleto.nossoNumero, // Identificador único do boleto
           empresa: boleto.empresa,
           vencimento: boleto.vencimento,
         }),
