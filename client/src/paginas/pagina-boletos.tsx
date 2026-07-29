@@ -5,6 +5,7 @@ import CardsResumo from '../componentes/boletos/cards-resumo';
 import PainelFiltros from '../componentes/boletos/painel-filtros';
 import TabelaBoletos from '../componentes/boletos/tabela-boletos';
 import BotaoAlternarTema from '../componentes/compartilhado/botao-alternar-tema';
+import BotaoVerificarAtualizacoes from '../componentes/compartilhado/botao-verificar-atualizacoes';
 import { montarUrlApi } from '../servicos/api';
 import { parsearArquivoRemessa } from '../servicos/parser-remessa';
 import { EmpresaSistema, ModoResumoBusca, RespostaBoletos } from '../tipos/boletos';
@@ -30,6 +31,7 @@ function salvarFiltroAnoMemoria(mapa: Record<string, string>) {
 export default function PaginaBoletos() {
   const navigate = useNavigate();
   const inputArquivoRemessaRef = useRef<HTMLInputElement | null>(null);
+  const inputPastaRemessaRef = useRef<HTMLInputElement | null>(null);
   const [empresaSelecionada, setEmpresaSelecionada] = useState('');
   const [anoSelecionado, setAnoSelecionado] = useState('');
   const [filtroAnoMemoria, setFiltroAnoMemoria] = useState<Record<string, string>>(() => carregarFiltroAnoMemoria());
@@ -410,31 +412,48 @@ export default function PaginaBoletos() {
     }
   };
 
-  const importarArquivoRemessa = async (evento: React.ChangeEvent<HTMLInputElement>) => {
-    const arquivo = evento.target.files?.[0];
+  const importarArquivosRemessa = async (evento: React.ChangeEvent<HTMLInputElement>) => {
+    const arquivosSelecionados = Array.from(evento.target.files || []);
     evento.target.value = '';
 
-    if (!arquivo || !empresaSelecionada) {
+    if (arquivosSelecionados.length === 0 || !empresaSelecionada) {
       return;
     }
 
-    if (!arquivo.name.toLowerCase().endsWith('.txt')) {
-      alert('Selecione um arquivo .txt de remessa valido.');
+    const arquivosTxt = arquivosSelecionados.filter(arquivo => arquivo.name.toLowerCase().endsWith('.txt'));
+
+    if (arquivosTxt.length === 0) {
+      alert('Nenhum arquivo .txt de remessa valido foi selecionado.');
       return;
     }
 
     try {
       setImportandoRemessa(true);
-      const conteudo = await arquivo.text();
-      const resultadoParse = parsearArquivoRemessa(conteudo);
-      const { registros, linhasInvalidas } = resultadoParse;
+
+      let linhasInvalidasTotal = 0;
+      let arquivosSemRegistros = 0;
+      const registros: { cliente: string; nossoNumero: string; valor: number; emissao: string; vencimento: string }[] = [];
+
+      for (const arquivo of arquivosTxt) {
+        const conteudo = await arquivo.text();
+        const resultadoParse = parsearArquivoRemessa(conteudo);
+        linhasInvalidasTotal += resultadoParse.linhasInvalidas;
+
+        if (resultadoParse.registros.length === 0) {
+          arquivosSemRegistros += 1;
+          continue;
+        }
+
+        registros.push(...resultadoParse.registros);
+      }
 
       if (registros.length === 0) {
-        alert('Arquivo vazio, fora do padrao esperado ou sem registros de detalhe validos.');
+        alert('Nenhum registro valido encontrado nos arquivos selecionados.');
         return;
       }
 
       let importados = 0;
+      let duplicados = 0;
       let rejeitados = 0;
 
       for (const registro of registros) {
@@ -453,6 +472,12 @@ export default function PaginaBoletos() {
 
         if (resposta.ok) {
           importados += 1;
+          continue;
+        }
+
+        const corpoErro = await resposta.json().catch(() => null);
+        if (corpoErro?.codigo === 'DUPLICADO') {
+          duplicados += 1;
         } else {
           rejeitados += 1;
         }
@@ -463,23 +488,27 @@ export default function PaginaBoletos() {
         await Promise.all([refetch(), refetchMeses()]);
       }
 
-      if (importados === 0) {
-        alert('Nenhum boleto da remessa foi importado. Verifique se os registros ja existem ou se o arquivo esta fora do padrao esperado.');
+      if (importados === 0 && duplicados === 0) {
+        alert('Nenhum boleto foi importado. Verifique se o arquivo esta fora do padrao esperado.');
         return;
       }
 
-      const partesMensagem = [`Remessa importada com sucesso. ${importados} boleto(s) importado(s).`];
+      const partesMensagem = [`Importacao concluida. ${importados} boleto(s) importado(s).`];
+      partesMensagem.push(`${duplicados} boleto(s) ja existiam no sistema e foram ignorados (duplicados).`);
       if (rejeitados > 0) {
-        partesMensagem.push(`${rejeitados} registro(s) rejeitado(s) pelo cadastro.`);
+        partesMensagem.push(`${rejeitados} registro(s) rejeitado(s) por dados invalidos.`);
       }
-      if (linhasInvalidas > 0) {
-        partesMensagem.push(`${linhasInvalidas} linha(s) invalida(s) ignorada(s).`);
+      if (linhasInvalidasTotal > 0) {
+        partesMensagem.push(`${linhasInvalidasTotal} linha(s) invalida(s) ignorada(s).`);
+      }
+      if (arquivosSemRegistros > 0) {
+        partesMensagem.push(`${arquivosSemRegistros} arquivo(s) sem registros validos.`);
       }
 
       alert(partesMensagem.join(' '));
     } catch (erro) {
       console.error('Erro ao importar remessa:', erro);
-      alert('Nao foi possivel importar a remessa. Verifique o formato do arquivo e tente novamente.');
+      alert('Nao foi possivel importar a remessa. Verifique o formato dos arquivos e tente novamente.');
     } finally {
       setImportandoRemessa(false);
     }
@@ -759,6 +788,7 @@ export default function PaginaBoletos() {
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2">
+              <BotaoVerificarAtualizacoes />
               <BotaoAlternarTema />
               <button
                 onClick={() => navigate('/cadastro', { state: { empresaSelecionada } })}
@@ -854,20 +884,41 @@ export default function PaginaBoletos() {
               ref={inputArquivoRemessaRef}
               type="file"
               accept=".txt,text/plain"
+              multiple
               className="hidden"
-              onChange={importarArquivoRemessa}
+              onChange={importarArquivosRemessa}
+            />
+
+            <input
+              ref={inputPastaRemessaRef}
+              type="file"
+              className="hidden"
+              onChange={importarArquivosRemessa}
+              {...({ webkitdirectory: 'true', directory: 'true' } as Record<string, string>)}
             />
 
             <button
               onClick={() => inputArquivoRemessaRef.current?.click()}
               disabled={importandoRemessa}
               className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              title={`Importar remessa para ${nomeEmpresaAtual}`}
+              title={`Importar um ou mais arquivos de remessa para ${nomeEmpresaAtual}`}
             >
               <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               {importandoRemessa ? 'Importando...' : 'Importar Remessa'}
+            </button>
+
+            <button
+              onClick={() => inputPastaRemessaRef.current?.click()}
+              disabled={importandoRemessa}
+              className="inline-flex items-center rounded-md border border-blue-600 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-blue-500 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-slate-800"
+              title={`Importar todos os arquivos de remessa de uma pasta para ${nomeEmpresaAtual}`}
+            >
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+              </svg>
+              {importandoRemessa ? 'Importando...' : 'Importar Pasta'}
             </button>
 
             <button

@@ -272,7 +272,9 @@ export function registrarNovoBoleto(dados: {
   valor: string | number;
   emissao: string;
   vencimento: string;
-}): { sucesso: true; arquivo: string; aba: string } | { sucesso: false; erro: string } {
+}):
+  | { sucesso: true; arquivo: string; aba: string }
+  | { sucesso: false; erro: string; codigo?: 'DUPLICADO' } {
   try {
     const cliente = dados.cliente.trim();
     const nossoNumero = dados.nossoNumero.trim();
@@ -295,9 +297,18 @@ export function registrarNovoBoleto(dados: {
     }
 
     const workbook = fs.existsSync(caminhoArquivo) ? XLSX.readFile(caminhoArquivo) : XLSX.utils.book_new();
-    const abaDuplicada = buscarDuplicado(workbook, nossoNumero);
-    if (abaDuplicada) {
-      return { sucesso: false, erro: `Nosso numero ja cadastrado na aba ${abaDuplicada}.` };
+
+    for (const ano of listarPeriodosEmpresa(dados.empresa)) {
+      const workbookVerificacao =
+        ano === anoArquivo ? workbook : XLSX.readFile(path.join(diretorioBoletos, montarNomeArquivoEmpresa(dados.empresa, ano)));
+      const abaDuplicada = buscarDuplicado(workbookVerificacao, nossoNumero);
+      if (abaDuplicada) {
+        return {
+          sucesso: false,
+          codigo: 'DUPLICADO',
+          erro: `Nosso numero ja cadastrado em ${montarNomeArquivoEmpresa(dados.empresa, ano)} (aba ${abaDuplicada}).`,
+        };
+      }
     }
 
     const nomeAbaReal = obterNomeAbaReal(workbook, nomeAba);

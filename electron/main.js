@@ -3,7 +3,8 @@ const path = require('path');
 const http = require('http');
 const net = require('net');
 const { spawn } = require('child_process');
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { autoUpdater } = require('electron-updater');
 
 const emDesenvolvimento = Boolean(process.env.ELECTRON_START_URL);
 const HOST_SERVIDOR = '127.0.0.1';
@@ -183,7 +184,7 @@ async function iniciarServidor() {
   let args = [];
 
   if (emDesenvolvimento) {
-    const caminhoTsx = require.resolve('tsx/dist/cli.mjs', {
+    const caminhoTsx = require.resolve('tsx/cli', {
       paths: [obterRaizProjeto()],
     });
     args = [caminhoTsx, caminhoServidor];
@@ -246,6 +247,7 @@ function criarJanela() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
+      preload: path.join(__dirname, 'preload.js'),
     },
     title: 'Gestao de Boletos',
     backgroundColor: '#f9fafb',
@@ -266,11 +268,81 @@ function criarJanela() {
   janelaPrincipal.setMenuBarVisibility(false);
 }
 
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
+
+function enviarStatusAtualizacao(canal, dados) {
+  if (janelaPrincipal && !janelaPrincipal.isDestroyed()) {
+    janelaPrincipal.webContents.send(canal, dados);
+  }
+}
+
+autoUpdater.on('checking-for-update', () => {
+  logElectron('Verificando atualizacoes...');
+  enviarStatusAtualizacao('atualizacao:verificando');
+});
+
+autoUpdater.on('update-available', info => {
+  logElectron('Atualizacao disponivel:', info.version);
+  enviarStatusAtualizacao('atualizacao:disponivel', { versao: info.version });
+  autoUpdater.downloadUpdate().catch(erro => {
+    logErroElectron('Erro ao baixar atualizacao:', erro);
+    enviarStatusAtualizacao('atualizacao:erro', { mensagem: erro.message });
+  });
+});
+
+autoUpdater.on('update-not-available', () => {
+  logElectron('Nenhuma atualizacao disponivel.');
+  enviarStatusAtualizacao('atualizacao:indisponivel');
+});
+
+autoUpdater.on('download-progress', progresso => {
+  enviarStatusAtualizacao('atualizacao:progresso', { percentual: progresso.percent });
+});
+
+autoUpdater.on('update-downloaded', info => {
+  logElectron('Atualizacao baixada:', info.version);
+  enviarStatusAtualizacao('atualizacao:baixada', { versao: info.version });
+});
+
+autoUpdater.on('error', erro => {
+  logErroElectron('Erro no auto-updater:', erro);
+  enviarStatusAtualizacao('atualizacao:erro', { mensagem: erro.message });
+});
+
+ipcMain.handle('atualizacao:verificar', async () => {
+  if (emDesenvolvimento || !app.isPackaged) {
+    enviarStatusAtualizacao('atualizacao:indisponivel');
+    return { ignorado: true };
+  }
+
+  try {
+    await autoUpdater.checkForUpdates();
+    return { ignorado: false };
+  } catch (erro) {
+    logErroElectron('Erro ao verificar atualizacoes:', erro);
+    enviarStatusAtualizacao('atualizacao:erro', { mensagem: erro.message });
+    return { ignorado: false, erro: erro.message };
+  }
+});
+
+ipcMain.handle('atualizacao:instalar', () => {
+  autoUpdater.quitAndInstall();
+});
+
+ipcMain.handle('atualizacao:versao-atual', () => app.getVersion());
+
 app.on('ready', async () => {
   try {
     logElectron('Iniciando aplicacao...');
     await iniciarServidor();
     criarJanela();
+
+    if (app.isPackaged) {
+      autoUpdater.checkForUpdates().catch(erro => {
+        logErroElectron('Erro ao verificar atualizacoes no inicio:', erro);
+      });
+    }
   } catch (erro) {
     logErroElectron('Falha ao inicializar aplicacao:', erro);
     dialog.showErrorBox('Erro ao iniciar a aplicacao', `Nao foi possivel iniciar o backend automaticamente.\n\n${erro.message}`);

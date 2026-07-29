@@ -338,7 +338,11 @@ export default function PaginaCadastro() {
 
       const resultado = await resposta.json();
       if (!resposta.ok) {
-        setMensagem({ texto: `Erro: ${resultado.erro || 'Falha ao registrar boleto.'}`, tipo: 'error' });
+        const mensagemBase = resultado.erro || 'Falha ao registrar boleto.';
+        setMensagem({
+          texto: resultado.codigo === 'DUPLICADO' ? `Boleto ja cadastrado no sistema: ${mensagemBase}` : `Erro: ${mensagemBase}`,
+          tipo: 'error',
+        });
         return;
       }
 

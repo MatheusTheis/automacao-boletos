@@ -15,6 +15,7 @@
     "debug": "^2.6.9",
     "depd": "^2.0.0",
     "destroy": "^1.2.0",
+    "electron-updater": "^6.8.9",
     "escape-html": "^1.0.3",
     "etag": "^1.8.1",
     "express": "^4.21.2",
@@ -50,6 +51,11 @@
     "directories": {
       "output": "dist-electron",
       "buildResources": "build"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "MatheusTheis",
+      "repo": "automacao-boletos"
     },
     "files": [
       "electron/**/*",

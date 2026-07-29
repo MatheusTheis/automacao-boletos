@@ -202,7 +202,10 @@ export default function FormularioCadastroBoleto({ configuracao }: { configuraca
 
       if (!resposta.ok) {
         setMensagem({
-          texto: `Erro: ${resultado.erro}`,
+          texto:
+            resultado.codigo === 'DUPLICADO'
+              ? `Boleto ja cadastrado no sistema: ${resultado.erro}`
+              : `Erro: ${resultado.erro}`,
           tipo: 'error',
         });
         return;

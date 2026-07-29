@@ -225,7 +225,8 @@ app.post('/api/boletos', (req, res) => {
     });
 
     if (!resultado.sucesso) {
-      return res.status(400).json({ erro: resultado.erro });
+      const status = resultado.codigo === 'DUPLICADO' ? 409 : 400;
+      return res.status(status).json({ erro: resultado.erro, codigo: resultado.codigo });
     }
 
     cache = null;
